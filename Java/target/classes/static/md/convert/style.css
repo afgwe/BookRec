@@ -1,0 +1,12 @@
+body{
+    margin-left:150px;
+    margin-right:150px;
+}
+
+body img{
+    display: none;
+}
+
+body p{
+    text-indent:24px;
+}

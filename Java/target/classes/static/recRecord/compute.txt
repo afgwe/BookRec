@@ -1,0 +1,10 @@
+//xData：[4.0]
+//yData：[4.0]
+//xMeans：4.0
+//yMeans：4.0
+//numerator：0.0
+//denominator：0.0
+//result：NaN
+
+
+

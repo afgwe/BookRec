@@ -1,0 +1,1049 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+
+    <title>Unknown</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="../stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="../page_styles.css" rel="stylesheet" type="text/css"/>
+
+  
+
+
+<link href="../calibreHtmlOutBasicCss.css" type="text/css" rel="stylesheet" />
+
+</head>
+<body>
+
+<div class="calibreMeta">
+  <div class="calibreMetaTitle">
+  
+  
+    
+    <h1>
+      <a href="../../1w54d-4vylw.html">C++并发编程实战
+</a>
+    </h1>
+    
+    
+  
+  </div>
+  <div class="calibreMetaAuthor">
+    威廉姆斯(Anthony Williams)
+
+  </div>
+</div>
+
+<div class="calibreMain">
+
+  <div class="calibreEbookContent">
+    
+      <div class="calibreEbNavTop">
+        
+          <a href="text00001.html" class="calibreAPrev">previous page
+</a>
+        
+
+        
+          <a href="text00003.html" class="calibreANext">next page
+</a>
+        
+      </div>
+    
+
+    
+<h1 class="not-in-toc">版权信息</h1>
+<p class="calibre2">书名：C++并发编程实战</p>
+<p class="calibre2">ISBN：978-7-115-38732-5</p>
+<p class="calibre2">
+<strong class="calibre3">本书由人民邮电出版社发行数字版。版权所有，侵权必究。</strong>
+</p>
+<hr class="calibre4"/>
+<p class="calibre2">您购买的人民邮电出版社电子书仅供您个人使用，未经授权，不得以任何方式复制和传播本书内容。</p>
+<p class="calibre2">我们愿意相信读者具有这样的良知和觉悟，与我们共同保护知识产权。</p>
+<p class="calibre2">如果购买者有侵权行为，我们可能对该用户实施包括但不限于关闭该帐号等维权措施，并可能追究法律责任。</p>
+<hr class="calibre4"/>
+<p class="calibre2">•　著　　　　 [美] Anthony Williams<br class="calibre5"/>
+</p>
+<p class="calibre2">　 译　　　　周　全　梁娟娟　宋真真　许　敏</p>
+<p class="calibre2">　 责任编辑　陈冀康</p>
+<p class="calibre2">•　人民邮电出版社出版发行　　北京市丰台区成寿寺路11号</p>
+<p class="calibre2">　 邮编　100164 　电子邮件　315@ptpress.com.cn</p>
+<p class="calibre2">　 网址　<a href="http://www.ptpress.com.cn" class="calibre6">http://www.ptpress.com.cn</a>
+</p>
+<p class="calibre2">•　读者服务热线：(010)81055410</p>
+<p class="calibre2">　 反盗版热线：(010)81055315</p>
+<p class="calibre2"><br class="calibre7"/>
+</p>
+<div class="calibre5"></div>
+
+
+
+  </div>
+
+  
+  <div class="calibreToc">
+    <h2><a href="../../1w54d-4vylw.html">Table of contents
+</a></h2>
+    <div>
+  <ul>
+    <li>
+      <a href="text00002.html">版权信息</a>
+    </li>
+    <li>
+      <a href="text00003.html#nav_point_0">版权声明</a>
+    </li>
+    <li>
+      <a href="text00004.html#nav_point_1">内容提要</a>
+    </li>
+    <li>
+      <a href="text00005.html#nav_point_2">序</a>
+    </li>
+    <li>
+      <a href="text00006.html#nav_point_3">译者简介</a>
+    </li>
+    <li>
+      <a href="text00008.html#nav_point_4">致谢</a>
+    </li>
+    <li>
+      <a href="text00009.html#nav_point_5">前言</a>
+      <ul>
+        <li>
+          <a href="text00009.html#nav_point_6">路线图</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_7">谁应该阅读本书</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_8">如何使用本书</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_9">代码约定和下载</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_10">软件需求</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_11">作者在线</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00010.html#nav_point_12">资源</a>
+      <ul>
+        <li>
+          <a href="text00010.html#nav_point_13">印刷资源</a>
+        </li>
+        <li>
+          <a href="text00010.html#nav_point_14">在线资源</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00011.html#nav_point_15">简要目录</a>
+    </li>
+    <li>
+      <a href="text00012.html#nav_point_16">第1章 你好，C++并发世界</a>
+      <ul>
+        <li>
+          <a href="text00012.html#nav_point_17">1.1 什么是并发</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_18">1.1.1 计算机系统中的并发</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_19">1.1.2 并发的途径</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_20">1.2 为什么使用并发</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_21">1.2.1 为了划分关注点而使用并发</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_22">1.2.2 为了性能而使用并发</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_23">1.2.3 什么时候不使用并发</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_24">1.3 在C++中使用并发和多线程</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_25">1.3.1 C++多线程历程</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_26">1.3.2 新标准中的并发支持</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_27">1.3.3 C++线程库的效率</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_28">1.3.4 平台相关的工具</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_29">1.4 开始入门</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_30">你好，并发世界</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_31">1.5 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00013.html#nav_point_32">第2章 管理线程</a>
+      <ul>
+        <li>
+          <a href="text00013.html#nav_point_33">2.1 基本线程管理</a>
+          <ul>
+            <li>
+              <a href="text00013.html#nav_point_34">2.1.1 启动线程</a>
+            </li>
+            <li>
+              <a href="text00013.html#nav_point_35">2.1.2 等待线程完成</a>
+            </li>
+            <li>
+              <a href="text00013.html#nav_point_36">2.1.3 在异常环境下的等待</a>
+            </li>
+            <li>
+              <a href="text00013.html#nav_point_37">2.1.4 在后台运行线程</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_38">2.2 传递参数给线程函数</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_39">2.3 转移线程的所有权</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_40">2.4 在运行时选择线程数量</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_41">2.5 标识线程</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_42">2.6 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00014.html#nav_point_43">第3章 在线程间共享数据</a>
+      <ul>
+        <li>
+          <a href="text00014.html#nav_point_44">3.1 线程之间共享数据的问题</a>
+          <ul>
+            <li>
+              <a href="text00014.html#nav_point_45">3.1.1 竞争条件</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_46">3.1.2 避免有问题的竞争条件</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00014.html#nav_point_47">3.2 用互斥元保护共享数据</a>
+          <ul>
+            <li>
+              <a href="text00014.html#nav_point_48">3.2.1 使用C++中的互斥元</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_49">3.2.2 为保护共享数据精心组织代码</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_50">3.2.3 发现接口中固有的竞争条件</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_51">3.2.4 死锁：问题和解决方案</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_52">3.2.5 避免死锁的进一步指南</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_53">3.2.6 用std::unique_lock灵活锁定</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_54">3.2.7 在作用域之间转移锁的所有权</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_55">3.2.8 锁定在恰当的粒度</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00014.html#nav_point_56">3.3 用于共享数据保护的替代工具</a>
+          <ul>
+            <li>
+              <a href="text00014.html#nav_point_57">3.3.1 在初始化时保护共享数据</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_58">3.3.2 保护很少更新的数据结构</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_59">3.3.3 递归锁</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00014.html#nav_point_60">3.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00015.html#nav_point_61">第4章 同步并发操作</a>
+      <ul>
+        <li>
+          <a href="text00015.html#nav_point_62">4.1 等待事件或其他条件</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_63">4.1.1 用条件变量等待条件</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_64">4.1.2 使用条件变量建立一个线程安全队列</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_65">4.2 使用future等待一次性事件</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_66">4.2.1 从后台任务中返回值</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_67">4.2.2 将任务与future相关联</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_68">4.2.3 生成(std::)promise</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_69">4.2.4 为future保存异常</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_70">4.2.5 等待自多个线程</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_71">4.3 有时间限制的等待</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_72">4.3.1 时钟</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_73">4.3.2 时间段</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_74">4.3.3 时间点</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_75">4.3.4 接受超时的函数</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_76">4.4 使用操作同步来简化代码</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_77">4.4.1 带有future的函数式编程</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_78">4.4.2 具有消息传递的同步操作</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_79">4.5 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00016.html#nav_point_80">第5章 C++内存模型和原子类型上操作</a>
+      <ul>
+        <li>
+          <a href="text00016.html#nav_point_81">5.1 内存模型基础</a>
+          <ul>
+            <li>
+              <a href="text00016.html#nav_point_82">5.1.1 对象和内存位置</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_83">5.1.2 对象、内存位置以及并发</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_84">5.1.3 修改顺序</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00016.html#nav_point_85">5.2 C++中的原子操作及类型</a>
+          <ul>
+            <li>
+              <a href="text00016.html#nav_point_86">5.2.1 标准原子类型</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_87">5.2.2 std::atomic_flag上的操作</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_88">5.2.3 基于std::atomic&lt;bool&gt;的操作</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_89">5.2.4 std::atomic&lt;T*&gt;上的操作：指针算术运算</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_90">5.2.5 标准原子整型的操作</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_91">5.2.6 std::atomic&lt;&gt;初级类模板</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_92">5.2.7 原子操作的自由函数</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00016.html#nav_point_93">5.3 同步操作和强制顺序</a>
+          <ul>
+            <li>
+              <a href="text00016.html#nav_point_94">5.3.1 synchronizes-with关系</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_95">5.3.2 happens-before关系</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_96">5.3.3 原子操作的内存顺序</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_97">5.3.4 释放序列和synchronizes-with</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_98">5.3.5 屏障</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_99">5.3.6 用原子操作排序非原子操作</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00016.html#nav_point_100">5.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00017.html#nav_point_101">第6章 设计基于锁的并发数据结构</a>
+      <ul>
+        <li>
+          <a href="text00017.html#nav_point_102">6.1 为并发设计的含义是什么</a>
+          <ul>
+            <li>
+              <a href="text00017.html#nav_point_103">为并发设计数据结构的准则</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00017.html#nav_point_104">6.2 基于锁的并发数据结构</a>
+          <ul>
+            <li>
+              <a href="text00017.html#nav_point_105">6.2.1 使用锁的线程安全栈</a>
+            </li>
+            <li>
+              <a href="text00017.html#nav_point_106">6.2.2 使用锁和条件变量的线程安全队列</a>
+            </li>
+            <li>
+              <a href="text00017.html#nav_point_107">6.2.3 使用细粒度锁和条件变量的线程安全队列</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00017.html#nav_point_108">6.3 设计更复杂的基于锁的数据结构</a>
+          <ul>
+            <li>
+              <a href="text00017.html#nav_point_109">6.3.1 编写一个使用锁的线程安全查找表</a>
+            </li>
+            <li>
+              <a href="text00017.html#nav_point_110">6.3.2 编写一个使用锁的线程安全链表</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00017.html#nav_point_111">6.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00018.html#nav_point_112">第7章 设计无锁的并发数据结构</a>
+      <ul>
+        <li>
+          <a href="text00018.html#nav_point_113">7.1 定义和结果</a>
+          <ul>
+            <li>
+              <a href="text00018.html#nav_point_114">7.1.1 非阻塞数据结构的类型</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_115">7.1.2 无锁数据结构</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_116">7.1.3 无等待的数据结构</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_117">7.1.4 无锁数据结构的优点与缺点</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00018.html#nav_point_118">7.2 无锁数据结构的例子</a>
+          <ul>
+            <li>
+              <a href="text00018.html#nav_point_119">7.2.1 编写不用锁的线程安全栈</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_120">7.2.2 停止恼人的泄漏：在无锁数据结构中管理内存</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_121">7.2.3 用风险指针检测不能被回收的结点</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_122">7.2.4 使用引用计数检测结点</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_123">7.2.5 将内存模型应用至无锁栈</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_124">7.2.6 编写不用锁的线程安全队列</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00018.html#nav_point_125">7.3 编写无锁数据结构的准则</a>
+          <ul>
+            <li>
+              <a href="text00018.html#nav_point_126">7.3.1 准则：使用std::memory_order_seq_cst作为原型</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_127">7.3.2 准则：使用无锁内存回收模式</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_128">7.3.3 准则：当心ABA问题</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_129">7.3.4 准则：识别忙于等待的循环以及辅助其他线程</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00018.html#nav_point_130">7.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00019.html#nav_point_131">第8章 设计并发代码</a>
+      <ul>
+        <li>
+          <a href="text00019.html#nav_point_132">8.1 在线程间划分工作的技术</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_133">8.1.1 处理开始前在线程间划分数据</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_134">8.1.2 递归地划分数据</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_135">8.1.3 以任务类型划分工作</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_136">8.2 影响并发代码性能的因素</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_137">8.2.1 有多少个处理器？</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_138">8.2.2 数据竞争和乒乓缓存</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_139">8.2.3 假共享</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_140">8.2.4 数据应该多紧密</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_141">8.2.5 过度订阅和过多的任务切换</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_142">8.3 为多线程性能设计数据结构</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_143">8.3.1 为复杂操作划分数组元素</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_144">8.3.2 其他数据结构中的数据访问方式</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_145">8.4 为并发设计时的额外考虑</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_146">8.4.1 并行算法中的异常安全</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_147">8.4.2 可扩展性和阿姆达尔定律</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_148">8.4.3 用多线程隐藏延迟</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_149">8.4.4 用并发提高响应性</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_150">8.5 在实践中设计并发代码</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_151">8.5.1 std::for_each的并行实现</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_152">8.5.2 std::find的并行实现</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_153">8.5.3 std::partial_sum的并行实现</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_154">8.6 总结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00020.html#nav_point_155">第9章 高级线程管理</a>
+      <ul>
+        <li>
+          <a href="text00020.html#nav_point_156">9.1 线程池</a>
+          <ul>
+            <li>
+              <a href="text00020.html#nav_point_157">9.1.1 最简单的线程池</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_158">9.1.2 等待提交给线程池的任务</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_159">9.1.3 等待其他任务的任务</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_160">9.1.4 避免工作队列上的竞争</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_161">9.1.5 工作窃取</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00020.html#nav_point_162">9.2 中断线程</a>
+          <ul>
+            <li>
+              <a href="text00020.html#nav_point_163">9.2.1 启动和中断另一个线程</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_164">9.2.2 检测一个线程是否被中断</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_165">9.2.3 中断等待条件变量</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_166">9.2.4 中断在std::condition_variable_any上的等待</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_167">9.2.5 中断其他阻塞调用</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_168">9.2.6 处理中断</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_169">9.2.7 在应用退出时中断后台任务</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00020.html#nav_point_170">9.3 总结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00021.html#nav_point_171">第10章 多线程应用的测试与调试</a>
+      <ul>
+        <li>
+          <a href="text00021.html#nav_point_172">10.1 并发相关错误的类型</a>
+          <ul>
+            <li>
+              <a href="text00021.html#nav_point_173">10.1.1 不必要的阻塞</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_174">10.1.2 竞争条件</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00021.html#nav_point_175">10.2 定位并发相关的错误的技巧</a>
+          <ul>
+            <li>
+              <a href="text00021.html#nav_point_176">10.2.1 审阅代码以定位潜在的错误</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_177">10.2.2 通过测试定位并发相关的错误</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_178">10.2.3 可测试性设计</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_179">10.2.4 多线程测试技术</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_180">10.2.5 构建多线程的测试代码</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_181">10.2.6 测试多线程代码的性能</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00021.html#nav_point_182">10.3 总结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00022.html#nav_point_183">附录A C++11部分语言特性简明参考</a>
+      <ul>
+        <li>
+          <a href="text00022.html#nav_point_184">A.1 右值引用</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_185">A.1.1 移动语义</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_186">A.1.2 右值引用与函数模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_187">A.2 deleted函数</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_188">A.3 defaulted函数</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_189">A.4 constexpr函数</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_190">A.4.1 constexpr与用户定义类型</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_191">A.4.2 constexpr对象</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_192">A.4.3 constexpr函数要求</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_193">A.4.4 constexpr与模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_194">A.5 lambda函数</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_195">引用局部变量的lambda函数</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_196">A.6 变参模板</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_197">展开参数包</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_198">A.7 自动推断变量的类型</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_199">A.8 线程局部变量</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_200">A.9 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00023.html#nav_point_201">附录B 并发类库简要对比</a>
+    </li>
+    <li>
+      <a href="text00024.html#nav_point_202">附录C 消息传递框架与完整的ATM示例</a>
+    </li>
+    <li>
+      <a href="text00025.html#nav_point_203">附录D C++线程类库参考</a>
+      <ul>
+        <li>
+          <a href="text00025.html#nav_point_204">D.1 &lt;chrono&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_205">D.1.1 std::chrono::duration类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_206">D.1.2 std::chrono::time_point类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_207">D.1.3 std::chrono::system_clock类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_208">D.1.4 std::chrono::steady_clock类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_209">D.1.5 std::chrono::high_resolution_clock typedef</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_210">D.2 &lt;condition_variable&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_211">D.2.1 std::condition_variable类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_212">D.2.2 std::condition_variable_any类</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_213">D.3 &lt;atomic&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_214">D.3.1 std::atomic_xxx typedef</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_215">D.3.2 ATOMIC_xxx_LOCK_FREE宏</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_216">D.3.3 ATOMIC_VAR_INIT宏</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_217">D.3.4 std::memory_order枚举</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_218">D.3.5 std::atomic_thread_fence函数</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_219">D.3.6 std::atomic_signal_fence函数</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_220">D.3.7 std::atomic_flag类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_221">D.3.8 std::atomic类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_222">D.3.9 std::atomic模板的特化</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_223">D.3.10 std::atomic&lt;integral-type&gt;特化</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_224">D.3.11 std::atomic&lt;T*&gt;偏特化</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_225">D.4 &lt;future&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_226">D.4.1 std::future类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_227">D.4.2 std::shared_future类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_228">D.4.3 std::packaged_task类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_229">D.4.4 std::promise类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_230">D.4.5 std::async函数模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_231">D.5 &lt;mutex&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_232">D.5.1 std::mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_233">D.5.2 std::recursive_mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_234">D.5.3 std::timed_mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_235">D.5.4 std::recursive_timed_mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_236">D.5.5 std::lock_guard类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_237">D.5.6 std::unique_lock类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_1">D.5.7 std::lock函数模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_2">D.5.8 std::try_lock函数模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_3">D.5.9 std::once_flag类</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_4">D.5.10 std::call_once函数模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#sigil_toc_id_5">D.6 &lt;ratio&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#sigil_toc_id_6">D.6.1 std::ratio类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_7">D.6.2 std::ratio_add模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_8">D.6.3 std::ratio_subtract模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_9">D.6.4 std::ratio_multiply模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_10">D.6.5 std::ratio_divide模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_11">D.6.6 std::ratio_equal类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_12">D.6.7 std::ratio_not_equal类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_13">D.6.8 std::ratio_less类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_14">D.6.9 std::ratio_greater类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_15">D.6.10 std::ratio_less_equal类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_16">D.6.11 std::ratio_greater_equal类模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#sigil_toc_id_17">D.7 &lt;thread&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#sigil_toc_id_18">D.7.1 std::thread类</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_19">D.7.2 this_thread命名空间</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00026.html#nav_point_238">欢迎来到异步社区！</a>
+      <ul>
+        <li>
+          <a href="text00026.html#nav_point_239">异步社区的来历</a>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_240">社区里都有什么？</a>
+          <ul>
+            <li>
+              <a href="text00026.html#nav_point_241">购买图书</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_242">下载资源</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_243">与作译者互动</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_244">灵活优惠的购书</a>
+          <ul>
+            <li>
+              <a href="text00026.html#nav_point_245">纸电图书组合购买</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_246">社区里还可以做什么？</a>
+          <ul>
+            <li>
+              <a href="text00026.html#nav_point_247">提交勘误</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_248">写作</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_249">会议活动早知道</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_250">加入异步</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00027.html#sigil_toc_id_20">看完了</a>
+    </li>
+  </ul>
+</div>
+
+
+  </div>
+  
+
+  <div class="calibreEbNav">
+    
+      <a href="text00001.html" class="calibreAPrev">previous page
+</a>
+    
+
+    <a href="../../1w54d-4vylw.html" class="calibreAHome">start
+</a>
+
+    
+      <a href="text00003.html" class="calibreANext">next page
+</a>
+    
+  </div>
+
+</div>
+
+</body>
+</html>

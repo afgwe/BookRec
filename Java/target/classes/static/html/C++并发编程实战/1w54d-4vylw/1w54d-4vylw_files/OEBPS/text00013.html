@@ -1,0 +1,1536 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+
+    <title>Unknown</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="../stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="../page_styles.css" rel="stylesheet" type="text/css"/>
+
+  
+
+
+<link href="../calibreHtmlOutBasicCss.css" type="text/css" rel="stylesheet" />
+
+</head>
+<body>
+
+<div class="calibreMeta">
+  <div class="calibreMetaTitle">
+  
+  
+    
+    <h1>
+      <a href="../../1w54d-4vylw.html">C++并发编程实战
+</a>
+    </h1>
+    
+    
+  
+  </div>
+  <div class="calibreMetaAuthor">
+    威廉姆斯(Anthony Williams)
+
+  </div>
+</div>
+
+<div class="calibreMain">
+
+  <div class="calibreEbookContent">
+    
+      <div class="calibreEbNavTop">
+        
+          <a href="text00012.html" class="calibreAPrev">previous page
+</a>
+        
+
+        
+          <a href="text00014.html" class="calibreANext">next page
+</a>
+        
+      </div>
+    
+
+    
+<h1 id="nav_point_32" class="not-in-toc">第2章　管理线程</h1>
+<p class="zw">
+<strong class="calibre3">本章主要内容</strong>
+</p>
+<ul class="calibre13">
+<li class="di_1ji_wu_xu_lie_biao">
+<strong class="calibre3">启动线程，以及各种让代码在新线程上运行的方法</strong>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<strong class="calibre3">等待线程完成并让它自动运行</strong>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<strong class="calibre3">唯一地标识线程</strong>
+</li>
+</ul>
+<p class="zw">那么，你已经下决心为你的应用程序使用并发了。特别地，你决定了使用多线程。接下来呢？如何启动这些线程，怎样检查它们已完成，怎样监视它们呢？C++标准库让大多数线程管理任务变得相对简单，通过与给定线程相关联的<code class="calibre10">std::thread</code>
+ 对象就可以管理所有事情，如你将要看到的那样。对于那些并不直观的任务，标准库也提供了从基本构建块进行按需构建的可扩展性。</p>
+<p class="zw">在本章中，我将从基础开始阐述。启动一个线程，等待它完成，或是在后台运行它。接下来我们将看一看在线程函数启动时向其传递额外的参数，以及如何将线程的所有权从一个<code class="calibre10">std::thread</code>
+ 对象转移到另一个。最后，我们会看一看选择所使用的线程数量，以及标识特定的线程。</p>
+<h2 id="nav_point_33" class="calibre11">2.1　基本线程管理</h2>
+<p class="zw">每个C++程序都拥有至少一个线程，它是由C++在运行时启动的，该线程运行着<code class="calibre10">main()</code>
+ 函数。你的程序可以继续启动具有其他函数作为入口的线程。然后，这些线程连同初始线程一起，并发运行。正如程序会在<code class="calibre10">main()</code>
+ 函数返回时退出那样，当指定的入口函数返回时，该线程就会退出。如你所见，如果你有线程对应的<code class="calibre10">std::thread</code>
+ 对象，你就可以等待它完成。但首先你得启动它，所以让我们来看一看启动线程。</p>
+<h3 id="nav_point_34" class="calibre14">2.1.1　启动线程</h3>
+<p class="zw">如同你在第1章中所看到的，线程是通过构造<code class="calibre10">std::thread</code>
+ 对象来开始的，该对象指定了线程上要运行的任务。在最简单的情况下，该任务仅仅是一个普普通通的返回<code class="calibre10">void</code>
+ 且不接受参数的函数。这个函数在自己的线程上运行，直到返回，然后线程停止。但从另一个极端看，该任务可能是一个接受额外参数的函数对象，当它运行时，会执行一系列由某种消息机制所指定的相互独立的操作，并且只有当线程再次通过某种消息机制接收到信号时才会停止。无论线程将要做什么或是从哪里启动，使用C++线程库来开始一个线程总归是要构造一个<code class="calibre10">std::thread</code>
+ 对象。</p>
+<p class="calibre16"><img alt="..\tu\16a.tif" src="Image00007.gif" class="calibre15"/>
+</p>
+<p class="zw">就是这么简单。当然，你必须确保引入了<code class="calibre10">&lt;thread&gt;</code>
+ 头文件，从而编译器可以找到<code class="calibre10">std::thread</code>
+ 类的定义。与许多C++标准库相似，<code class="calibre10">std::thread</code>
+ 可以与任何<strong class="calibre3">可调用（callable）</strong>
+ 类型一同工作，所以你可以将一个带有函数调用操作符的类的实例传递给<code class="calibre10">std::thread</code>
+ 的构造函数来进行代替。</p>
+<p class="calibre16"><img alt="..\tu\16b.tif" src="Image00008.gif" class="calibre15"/>
+</p>
+<p class="zw">在这种情况下，所提供的函数对象被<strong class="calibre3">复制（copied）</strong>
+ 到属于新创建的执行线程的存储器中，并从那里调用。因此重要的是，副本与原版有着等效的行为，否则结果可能会与预期不符。</p>
+<p class="zw">当给线程构造函数传递一个函数对象时要考虑的一件事是避免所谓的“C++的最棘手的解析”。如果你传递一个临时的且未命名的变量，那么其语法可能与函数声明一样，在这种情况下，编译器会将其解释成如下这样，而非对象定义。例如，</p>
+<p class="calibre16"><img alt="..\tu\17a.tif" src="Image00009.gif" class="calibre15"/>
+</p>
+<p class="zw">声明了函数<code class="calibre10">my</code>
+ _<code class="calibre10">thread</code>
+ ，它接受单个参数（参数类型是指向不接受参数同时返回<code class="calibre10">background</code>
+ _<code class="calibre10">task</code>
+ 对象的函数的指针），并返回<code class="calibre10">std::thread</code>
+ 对象，而不是启动一个新线程。你可以像前面说的那样通过命名函数对象来避免这种情况，通过使用一组额外的括号，或使用新的统一初始化语法，例如，</p>
+<p class="calibre16"><img alt="..\tu\17b.tif" src="Image00010.gif" class="calibre15"/>
+</p>
+<p class="zw">在第一个例子❶中，额外的括号避免其解释为函数声明，从而让<code class="calibre10">my</code>
+ _<code class="calibre10">thread</code>
+ 被声明为<code class="calibre10">std::thread</code>
+ 类型的变量。第二个例子❷使用新的统一初始化语法，用大括号而不是括号，同样也是声明一个变量。</p>
+<p class="zw">有一种避免了此问题的可调用对象类型，就是<strong class="calibre3">
+<strong class="calibre3">lambda</strong>
+ 表达式（<strong class="calibre3">lambda</strong>
+ <strong class="calibre3">expression</strong>
+ ）</strong>
+ 。这是C++11中的一项新功能，其基本功能是允许你编写一个局部函数，并可能捕捉一些局部变量，同时避免传递额外参数的需求（参见2.2节）。有关lambda表达式的详情，请参阅附录A中A.5节。前面的例子可以用lambda表达式编写如下。</p>
+<p class="calibre16"><img alt="..\tu\17c.tif" src="Image00011.gif" class="calibre15"/>
+</p>
+<p class="zw">一旦开始了线程，你需要显式地决定是要等待它完成（通过结合它——参见2.1.2节），还是让它自行运行（通过分离它——参见2.1.3节）。如果你在<code class="calibre10">std::thread</code>
+ 对象被销毁前未作决定，那么你的程序会被终止（<code class="calibre10">std::thread</code>
+ 的析构函数调用<code class="calibre10">std::terminate()</code>
+ ）。因此，即便在异常存在的情况下，确保线程正确地结合或是分离都是你的当务之急。请参见2.1.3节中处理这一场景的技巧。需要注意的是，你只需要在<code class="calibre10">std::thread</code>
+ 对象被销毁之前做出这个决定即可——线程本身可能在你结合或分离它之前早就已经结束了，而且如果你分离它，那么该线程可能在<code class="calibre10">std::thread</code>
+ 对象被销毁后很久都还在运行。</p>
+<p class="zw">如果你不等待线程完成，那么你需要确保通过该线程访问的数据是有效的，直到该线程完成为止。这并不是新问题——即使是在单线程代码中，在对象被销毁后还访问它也是未定义的行为——但线程的使用提供了遇到这种生命周期问题的额外机会。</p>
+<p class="zw">你可能遇到这样问题的一种情况是，当线程函数持有局部变量的指针或引用，且当函数退出的时候线程尚未完成时，清单2.1展示的就是这样一个场景的例子。</p>
+<p class="calibre17">
+<strong class="calibre3">清单2.1　当线程仍然访问局部变量时返回的函数</strong>
+</p>
+<p class="calibre16"><img alt="图像说明文字" src="Image00012.jpg" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="图像说明文字" src="Image00013.jpg" class="calibre15"/>
+</p>
+<p class="zw">在这种情况下，当<code class="calibre10">oops</code>
+ 退出❸时与<code class="calibre10">my</code>
+ _<code class="calibre10">thread</code>
+ 相关联的新线程可能仍然在运行，因为通过调用<code class="calibre10">detach()</code>
+ ❷你已经显式地决定不等待它。如果线程仍在运行，则在下次调用<code class="calibre10">do</code>
+ _<code class="calibre10">something(i)</code>
+ ❶时就会访问一个已被销毁的变量。这就像普通的单线程代码那样——允许对局部变量的指针或引用持续到函数退出之后绝不是一个好主意——但对于多线程代码更容易犯这样的错误，因为当它发生的时候，并不一定是显而易见的。</p>
+<p class="zw">一个常见的处理这种情况的方式是使线程函数自包含，并且把数据复制（copy）到该线程中而不是共享数据。如果你为线程函数使用了一个可调用对象，该对象本身被复制到该线程中，那么原始对象就可以立即被销毁。但是你仍然需要警惕包含有指针或引用的对象，就像上面的清单2.1那样。特别地，在一个访问局部变量的函数中创建线程是个糟糕的主意，除非能保证线程在函数退出前完成。</p>
+<p class="zw">另外，通过<strong class="calibre3">结合（joining）</strong>
+ 线程，你可以确保在函数退出前，该线程执行完毕。</p>
+<h3 id="nav_point_35" class="calibre14">2.1.2　等待线程完成</h3>
+<p class="zw">如果你需要等待线程完成，你可以通过在相关联的<code class="calibre10">std::thread</code>
+ 实例上调用<code class="calibre10">join()</code>
+ 来实现。在清单2.1的情况下，把函数体右括号前对<code class="calibre10">my</code>
+ _<code class="calibre10">thread.detach()</code>
+ 的调用替换为调用<code class="calibre10">my</code>
+ _<code class="calibre10">thread.join()</code>
+ ，就将足以确保在函数退出之前，即局部变量被销毁之前，该线程就已结束。在这种情况下，就意味着在独立的线程上运行函数是没什么意义的，因为第一个线程在此期间将做不了任何有用的事情，但在实际的代码当中，初始线程可能要么有自己的工作去做，要么是在等待所有线程完成之前就要启动多个线程来做有用的工作。</p>
+<p class="zw">
+<code class="calibre10">join()</code>
+ 很简单也很暴力——你要么等待一个线程完成要么就不等。如果你需要对等待线程进行更细粒度的控制，比如检查线程是否完成，或只是在一段特定的时间内进行等待，那么就必须使用替代机制，例如条件变量和future，我们将在第4章中提到。调用<code class="calibre10">join()</code>
+ 的行为也会清理所有与该线程相关联的存储器，这样<code class="calibre10">std::thread</code>
+ 对象不再与现已完成的线程相关联，它也不与任何线程相关联。这就意味着，你只能对一个给定的线程调用一次<code class="calibre10">join()</code>
+ ，一旦你调用了<code class="calibre10">join()</code>
+ ，此<code class="calibre10">std::thread</code>
+ 对象不再是可连接的，并且<code class="calibre10">joinable()</code>
+ 将返回<code class="calibre10">false</code>
+ 。</p>
+<h3 id="nav_point_36" class="calibre14">2.1.3　在异常环境下的等待</h3>
+<p class="zw">如前所述，你要确保在<code class="calibre10">std::thread</code>
+ 对象被销毁前已调用<code class="calibre10">join()</code>
+ 或<code class="calibre10">detach()</code>
+ 函数。如果要分离线程，通常在线程启动后就可以立即调用<code class="calibre10">detach()</code>
+ ，所以这不是个问题。但是如果打算等待该线程，就需要仔细地选择在代码的哪个位置调用<code class="calibre10">join()</code>
+ 。这意味着，如果在线程开始之后但又是在调用<code class="calibre10">join()</code>
+ 之前引发了异常，对<code class="calibre10">join()</code>
+ 的调用就容易被跳过。</p>
+<p class="zw">为了避免应用程序在引发异常的时候被终止，你需要在这种情况决定要做什么。一般来说，如果你打算在非异常的情况下调用<code class="calibre10">join()</code>
+ ，你还需要在存在异常时调用<code class="calibre10">join()</code>
+ ，以避免意外的生命周期问题。清单2.2展示了这样的简单代码。</p>
+<p class="calibre17">
+<strong class="calibre3">清单2.2　等待线程结束</strong>
+</p>
+<p class="calibre16"><img alt="图像说明文字" src="Image00014.jpg" class="calibre15"/>
+</p>
+<p class="zw">清单2.2中的代码使用了<code class="calibre10">try</code>
+ /<code class="calibre10">catch</code>
+ 块，以确保访问局部状态的线程在函数退出前结束，无论函数是正常退出❷还是异常❶中断。使用<code class="calibre10">try</code>
+ /<code class="calibre10">catch</code>
+ 块很啰嗦，而且容易将作用域弄乱，所以并不是一个理想的方案。如果确保线程必须在函数退出前完成是很重要的——无论是因为它具有对其他局部变量的引用还是任何其他原因——那么确保这是所有可能的退出路径的情况是很重要的，无论正常还是异常，并且希望提供一个这样做的简单明了的机制。</p>
+<p class="zw">这样做的方法之一是使用标准的<strong class="calibre3">资源获取即初始化（RAII）</strong>
+ 惯用语法，并提供一个类，在它的析构函数中进行<code class="calibre10">join()</code>
+ ，正如清单2.3的代码。看看它是如何简化函数<code class="calibre10">f()</code>
+ 的。</p>
+<p class="calibre17">
+<strong class="calibre3">清单2.3　使用RAII等待线程完成</strong>
+</p>
+<p class="calibre16"><img alt="图像说明文字" src="Image00015.jpg" class="calibre15"/>
+</p>
+<p class="zw">在当前线程的执行到达<code class="calibre10">f</code>
+ 末尾❹时，局部对象会按照构造函数的逆序被销毁。因此，<code class="calibre10">thread</code>
+ _<code class="calibre10">guard</code>
+ 对象<code class="calibre10">g</code>
+ 首先被销毁，并且析构函数❷中线程被结合。即便是当函数因<code class="calibre10">do</code>
+ _<code class="calibre10">something</code>
+ _<code class="calibre10">in</code>
+ _<code class="calibre10">current</code>
+ _<code class="calibre10">thread</code>
+ 引发异常而退出的情况下也会发生。</p>
+<p class="zw">在清单2.3中的析构函数在调用<code class="calibre10">join()</code>
+ ❷前首先测试<code class="calibre10">thread</code>
+ _<code class="calibre10">guard</code>
+ 的析构函数是不是<code class="calibre10">joinable()</code>
+ ❶的。这很重要，因为对于一个给定的执行线程<code class="calibre10">join()</code>
+ 只能被调用一次，所以如果线程已经被结合，这样做就是错误的。</p>
+<p class="zw">拷贝构造函数和拷贝赋值运算符被标记<code class="calibre10">=delete</code>
+ ❸，以确保他们不会由编译器自动提供。复制或赋值这样一个对象可能是危险的，因为它可能比它要结合的线程的作用域存在得更久。通过将它们声明为已删除的，任何复制<code class="calibre10">thread</code>
+ _<code class="calibre10">guard</code>
+ 对象的企图都将产生编译错误。参见附录A中A.2节，了解更多关于已删除的函数。</p>
+<p class="zw">如果无需等待线程完成，可以通过<strong class="calibre3">分离（detaching）</strong>
+ 它来避免这种异常安全问题。这打破了线程与<code class="calibre10">std::thread</code>
+ 对象的联系并确保当<code class="calibre10">std::thread</code>
+ 对象被销毁时<code class="calibre10">std::terminate()</code>
+ 不会被调用，即使线程仍在后台运行。</p>
+<h3 id="nav_point_37" class="calibre14">2.1.4　在后台运行线程</h3>
+<p class="zw">在<code class="calibre10">std::thread</code>
+ 对象上调用<code class="calibre10">detach()</code>
+ 会把线程丢在后台运行，也没有直接的方法与之通信。也不再可能等待该线程完成；如果一个线程成为分离的，获取一个引用它的<code class="calibre10">std::thread</code>
+ 对象也是不可能的，所以它也不再能够被结合。分离的线程确实是在后台运行；所有权和控制权被转交给C++运行时库，以确保与线程相关联的资源在线程退出后能够被正确地回收。</p>
+<p class="zw">参照UNIX的<strong class="calibre3">守护进程（daemon process</strong>
+ ）概念，被分离的线程通常被称为<strong class="calibre3">守护线程（daemon threads</strong>
+ ），它们无需任何显式的用户界面，而运行在后台。这样的线程通常是长时间运行的，它们可能在应用程序的几乎整个生命周期中都在运行，执行后台任务，例如监控文件系统、清除对象缓存中的未使用项或是优化数据结构。在另一个极端，有另一种鉴别线程何时完成的机制，或者线程被用作“即用即忘”任务，在这里使用分离线程也是有意义的。</p>
+<p class="zw">如你在2.1.2节中已经看到的，你通过调用<code class="calibre10">std::thread</code>
+ 对象的<code class="calibre10">detach()</code>
+ 的成员函数来分离线程。在调用完成后，<code class="calibre10">std::thread</code>
+ 对象不再与执行的实际线程相关联，同时也不能够被加入。</p>
+<p class="calibre16"><img alt="..\tu\21.tif" src="Image00016.gif" class="calibre15"/>
+</p>
+<p class="zw">为了从一个<code class="calibre10">std::thread</code>
+ 对象中分离线程，必须有一个线程供分离。你不能在一个没有与执行线程相关联的<code class="calibre10">std::thread</code>
+ 对象上调用<code class="calibre10">detach()</code>
+ 。这对于<code class="calibre10">join()</code>
+ 也是同样的要求，你可以用完全相同的方法进行检查——你只能在<code class="calibre10">t.joinable()</code>
+ 返回<code class="calibre10">true</code>
+ 的时候，为一个<code class="calibre10">std::thread</code>
+ 对象<code class="calibre10">t</code>
+ 调用<code class="calibre10">t.detach()</code>
+ 。</p>
+<p class="zw">考虑一个类似于字处理器的应用程序，它可以一次编辑多个文档。有许多种方法在UI级别和内部来处理这个问题。有一种现在看起来越来越普遍的方式，是具有多个相互独立的顶层窗口，与正在编辑的文档一一对应。尽管这些窗口看起来完全独立，各自拥有自己的菜单等，但它们是在同一个应用程序的实例上运行的。一种在内部处理这个问题的方式是在其自己的线程中运行各自的文档编辑窗口；每个线程都运行相同的代码，但拥有与被编辑文档相关的不同的数据以及相应的窗口属性。打开一个新的文档就需要启动一个新的线程。处理请求的线程并不在乎等待其他的线程完成，因为它在一个不相关的文件上工作，所以运行分离的线程就成为了首选。</p>
+<p class="zw">清单2.4展示了这种方法的简单的代码大纲。</p>
+<p class="calibre17">
+<strong class="calibre3">清单2.4　分离线程以处理其他文档</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\22.tif" src="Image00017.gif" class="calibre15"/>
+</p>
+<p class="zw">如果用户选择打开一个新的文档，它会提示其有文档要打开，启动新线程来打开该文档❶，然后分离它❷。因为新的线程与当前线程做着同样的操作，只是文件不同，你可以用新选定的文件名作为参数，重用同一个函数（<code class="calibre10">edit</code>
+ _<code class="calibre10">document</code>
+ ）。</p>
+<p class="zw">这个例子还展示了一个案例，它有助于传递参数给用来启动线程的函数：并非仅仅将函数名传递给<code class="calibre10">std::thread</code>
+ 构造函数❶，你还可以传递文件名参数。虽然也有其他机制能够做到这一点，例如使用具有成员数据的函数对象取代普通的带有参数的函数，但线程库提供了一个简单方法来实现之。</p>
+<h2 id="nav_point_38" class="calibre11">2.2　传递参数给线程函数</h2>
+<p class="zw">如清单2.4中所示，传递参数给可调用对象或函数，基本上就是简单地将额外的参数传递给<code class="calibre10">std::thread</code>
+ 构造函数。但重要的是，参数会以默认的方式被<strong class="calibre3">复制（copied）</strong>
+ 到内部存储空间，在那里新创建的执行线程可以访问它们，即便函数中的相应参数期待着引用。这里有一个简单的例子。</p>
+<p class="calibre16"><img alt="..\tu\23a.tif" src="Image00018.gif" class="calibre15"/>
+</p>
+<p class="zw">这里创建一个新的与<code class="calibre10">t</code>
+ 相关联的执行线程，称为<code class="calibre10">f(3, "hello")</code>
+ 。注意即使<code class="calibre10">f</code>
+ 接受<code class="calibre10">std::string</code>
+ 作为第二个参数，字符串字面值仅在新线程的上下文中才会作为<code class="calibre10">char const*</code>
+ 传送，并转换为<code class="calibre10">std::string</code>
+ 。尤其重要的是当提供的参数是一个自动变量的指针时，如下所示。</p>
+<p class="calibre16"><img alt="..\tu\23b.tif" src="Image00019.gif" class="calibre15"/>
+</p>
+<p class="zw">在这种情况下，正是局部变量<code class="calibre10">buffer</code>
+ ❶的指针被传递给新线程❷，还有一个重要的时机，即函数<code class="calibre10">oops</code>
+ 会在缓冲在新线程上被转换为<code class="calibre10">std::string</code>
+ 之前退出，从而导致未定义的行为。解决之道是在将缓冲传递给<code class="calibre10">std::thread</code>
+ 的构造函数之前转换为<code class="calibre10">std::string</code>
+ 。</p>
+<p class="calibre16"><img alt="图像说明文字" src="Image00020.jpg" class="calibre15"/>
+</p>
+<p class="zw">在这种情况下，问题就出在你依赖从缓冲的指针到函数所期望的<code class="calibre10">std::string</code>
+ 对象的隐式转换，因为<code class="calibre10">std::thread</code>
+ 构造函数原样复制了所提供的值，并未转换为期望的参数类型。</p>
+<p class="zw">也有可能得到相反的情况，对象被复制，而你想要的是引用。这可能发生在当线程正在更新一个通过引用传递来的数据结构时，例如，</p>
+<p class="calibre16"><img alt="..\tu\24a.tif" src="Image00021.gif" class="calibre15"/>
+</p>
+<p class="zw">尽管<code class="calibre10">update</code>
+ _<code class="calibre10">data</code>
+ _<code class="calibre10">for</code>
+ _<code class="calibre10">widget</code>
+ ❶希望通过引用传递第二个参数，<code class="calibre10">std::thread</code>
+ 的构造函数❷却并不知道；它无视函数所期望的类型，并且盲目地复制了所提供的值。当它调用<code class="calibre10">update</code>
+ _<code class="calibre10">data</code>
+ _<code class="calibre10">for</code>
+ _<code class="calibre10">widget</code>
+ 时，它最后将传递<code class="calibre10">data</code>
+ 在内部的副本的引用而非对<code class="calibre10">data</code>
+ 自身的引用。于是，当线程完成时，随着所提供参数的内部副本的销毁，这些改动都将被舍弃，将会传递一个未改变的<code class="calibre10">data</code>
+ ❸，而非正确更新的版本给<code class="calibre10">process</code>
+ _<code class="calibre10">widget</code>
+ _<code class="calibre10">data</code>
+ 。对于熟悉<code class="calibre10">std::bind</code>
+ 的人来说，解决方案也是显而易见的，你需要用<code class="calibre10">std::ref</code>
+ 来包装确实需要被引用的参数。在这种情况下，如果你将对线程的调用改为</p>
+<p class="calibre16"><img alt="..\tu\24b.tif" src="Image00022.gif" class="calibre15"/>
+</p>
+<p class="zw">那么<code class="calibre10">update</code>
+ _<code class="calibre10">data</code>
+ _<code class="calibre10">for</code>
+ _<code class="calibre10">widget</code>
+ 将被正确地传入<code class="calibre10">data</code>
+ 的引用，而非<code class="calibre10">data</code>
+ <strong class="calibre3">副本（copy）</strong>
+ 的引用。</p>
+<p class="zw">如果你熟悉<code class="calibre10">std::bind</code>
+ ，那么参数传递语义就不足为奇，因为<code class="calibre10">std::thread</code>
+ 构造函数和<code class="calibre10">std::bind</code>
+ 的操作都是依据相同的机制定义的。这意味着，例如，你可以传递一个成员函数的指针作为函数，前提是提供一个合适的对象指针作为第一个参数。</p>
+<p class="calibre16"><img alt="..\tu\24c.tif" src="Image00023.gif" class="calibre15"/>
+</p>
+<p class="zw">这段代码将在新线程上调用<code class="calibre10">my</code>
+ _<code class="calibre10">x.do</code>
+ _<code class="calibre10">lengthy</code>
+ _<code class="calibre10">work()</code>
+ ，因为<code class="calibre10">my</code>
+ _<code class="calibre10">x</code>
+ 的地址是作为对象指针❶提供的。你也可以提供参数给这样的成员函数调用：<code class="calibre10">std::thread</code>
+ 构造函数的第三个参数将作为成员函数的第一个参数等等。</p>
+<p class="zw">提供参数的另一个有趣的场景是，这里的参数不能被复制但只能<strong class="calibre3">被移动（moved</strong>
+ ）：一个对象内保存的数据被转移到另一个对象，使原来的对象变成“空壳”。这种类型的一个例子是<code class="calibre10">std::unique</code>
+ _<code class="calibre10">ptr</code>
+ ，它提供了动态分配对象的自动内存管理。只有一个<code class="calibre10">std::unique</code>
+ _<code class="calibre10">ptr</code>
+ 实例可以在某一时刻指向一个给定的对象，当该实例被销毁时，其指向的对象将被删除。<strong class="calibre3">移动构造函数（move constructor</strong>
+ ）和<strong class="calibre3">移动赋值运算符（move assignment operator</strong>
+ ）允许一个对象的所有权在<code class="calibre10">std::unique</code>
+ _<code class="calibre10">ptr</code>
+ 实例之间进行转移（参见附录A中A.1.1节，关于移动语义的详情）。这种转移给源对象留下一个<code class="calibre10">NULL</code>
+ 指针。这种值的移动使得该类型的对象作为函数的参数被接受或从函数返回值。在源对象是临时的场合，这种移动是自动的，但在源是一个命名值的地方，此转移必须直接通过调用<code class="calibre10">std::move()</code>
+ 来请求。下面的示例展示了运用<code class="calibre10">std::move</code>
+ 将动态对象的所有权转移到一个线程中。</p>
+<p class="calibre16"><img alt="..\tu\25.tif" src="Image00024.gif" class="calibre15"/>
+</p>
+<p class="zw">通过在<code class="calibre10">std::thread</code>
+ 构造函数中指定<code class="calibre10">std::move(p)</code>
+ ，<code class="calibre10">big</code>
+ _<code class="calibre10">object</code>
+ 的所有权先被转移进新创建的线程的内部存储中，然后进入<code class="calibre10">process</code>
+ _<code class="calibre10">big</code>
+ _<code class="calibre10">object</code>
+ 。</p>
+<p class="zw">标准线程库中的一些类表现出与<code class="calibre10">std::unique</code>
+ _<code class="calibre10">ptr</code>
+ 相同的所有权语义，<code class="calibre10">std::thread</code>
+ 就是其中之一。虽然<code class="calibre10">std::thread</code>
+ 实例并不拥有与<code class="calibre10">std::unique</code>
+ _<code class="calibre10">ptr</code>
+ 同样方式的动态对象，但他们却拥有资源，每一个实例负责管理一个执行线程。这种所有权可以在实例之间进行转移，因为<code class="calibre10">std::thread</code>
+ 的实例是<strong class="calibre3">可移动的（movable）</strong>
+ ，即使他们不是<strong class="calibre3">可复制的（copyable）</strong>
+ 。这确保了在允许程序员选择在对象之间转换所有权的时候，在任意时刻只有一个对象与某个特定的执行线程相　 关联。</p>
+<h2 id="nav_point_39" class="calibre11">2.3　转移线程的所有权</h2>
+<p class="zw">假设你想要编写一个函数，它创建一个在后台运行的线程，但是向调用函数回传新线程的所有权，而非等待其完成，又或者你想要反过来做，创建一个线程，并将所有权传递给要等待它完成的函数。在任意一种情况下，你都需要将所有权从一个地方转移到另一个地方。</p>
+<p class="zw">这里就是<code class="calibre10">std::thread</code>
+ 支持移动的由来。正如在上一节所描述的，在C++标准库里许多拥有资源的类型，如<code class="calibre10">std::ifstream</code>
+ 和<code class="calibre10">std ::unique</code>
+ _<code class="calibre10">ptr</code>
+ 是<strong class="calibre3">可移动的（movable）</strong>
+ ，而非<strong class="calibre3">可复制的（copyable）</strong>
+ ，并且<code class="calibre10">std::thread</code>
+ 就是其中之一。这意味着一个特定执行线程的所有权可以在<code class="calibre10">std::thread</code>
+ 实例之间移动，如同接下来的例子。该示例展示了创建两个执行线程，以及在三个<code class="calibre10">std::thread</code>
+ 实例<code class="calibre10">t1、t2</code>
+ 和<code class="calibre10">t3</code>
+ 之间对那些线程的所有权进行转移。</p>
+<p class="calibre16"><img alt="图像说明文字" src="Image00025.jpg" class="calibre15"/>
+</p>
+<p class="zw">首先，启动一个新线程❶并与<code class="calibre10">t1</code>
+ 相关联。然后当<code class="calibre10">t2</code>
+ 构建完成时所有权被转移给<code class="calibre10">t2</code>
+ ，通过调用<code class="calibre10">std::move()</code>
+ 来显式地转移所有权❷。此刻，<code class="calibre10">t1</code>
+ 不再拥有相关联的执行线程，运行<code class="calibre10">some</code>
+ _<code class="calibre10">function</code>
+ 的线程现在与<code class="calibre10">t2</code>
+ 相关联。</p>
+<p class="zw">然后，启动一个新的线程并与一个临时的<code class="calibre10">std::thread</code>
+ 对象相关联❸。接下来将所有权转移到<code class="calibre10">t1</code>
+ 中，是不需要调用<code class="calibre10">std::move()</code>
+ 来显式移动所有权的，因为此处所有者是一个临时对象——从临时对象中进行移动是自动和隐式的。</p>
+<p class="zw">
+<code class="calibre10">t3</code>
+ 是默认构造的❹，这意味着它的创建没有任何相关联的执行线程。当前与<code class="calibre10">t2</code>
+ 相关联的线程的所有权转移到<code class="calibre10">t3</code>
+ ❺，再次通过显式调用<code class="calibre10">std::move()</code>
+ ，因为<code class="calibre10">t2</code>
+ 是一个命名对象。在所有这些移动之后，<code class="calibre10">t1</code>
+ 与运行<code class="calibre10">some</code>
+ _<code class="calibre10">other</code>
+ _<code class="calibre10">function</code>
+ 的线程相关联，<code class="calibre10">t2</code>
+ 没有相关联的线程，<code class="calibre10">t3</code>
+ 与运行<code class="calibre10">some</code>
+ _<code class="calibre10">function</code>
+ 的线程相关联。</p>
+<p class="zw">最后一次移动❻将运行<code class="calibre10">some</code>
+ _<code class="calibre10">function</code>
+ 的线程的所有权转回给<code class="calibre10">t1</code>
+ 。但是在这种情况下<code class="calibre10">t1</code>
+ 已经有了一个相关联的线程（运行着<code class="calibre10">some</code>
+ _<code class="calibre10">other</code>
+ _<code class="calibre10">function</code>
+ ），所以会调用<code class="calibre10">std::terminate()</code>
+ 来终止程序。这样做是为了与<code class="calibre10">std::thread</code>
+ 的析构函数保持一致。你在第2.1.1节曾看到，你必须在析构前显式地等待线程完成或是分离，这同样适用于赋值：你不能仅仅通过向管理一个线程的<code class="calibre10">std::thread</code>
+ 对象赋值一个新的值来“舍弃”一个线程。</p>
+<p class="zw">
+<code class="calibre10">std::thread</code>
+ 支持移动意味着所有权可以很容易地从一个函数中被转移出，如清单2.5所示。</p>
+<p class="calibre17">
+<strong class="calibre3">清单2.5　从函数中返回std::thread</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\26b.tif" src="Image00026.gif" class="calibre15"/>
+</p>
+<p class="zw">同样地，如果要把所有权转移到函数中，它只能以值的形式接受<code class="calibre10">std::thread</code>
+ 的实例作为其中一个参数，如下所示。</p>
+<p class="calibre16"><img alt="..\tu\27a.tif" src="Image00027.gif" class="calibre15"/>
+</p>
+<p class="zw">
+<code class="calibre10">std::thread</code>
+ 支持移动的好处之一，就是你可以建立在清单2.3中<code class="calibre10">thread</code>
+ _<code class="calibre10">guard</code>
+ 类的基础上，同时使它实际上获得线程的所有权。这可以避免<code class="calibre10">thread</code>
+ _<code class="calibre10">guard</code>
+ 对象在引用它的线程结束后继续存在所造成的不良影响，同时也意味着一旦所有权转移到了该对象，那么其他对象都不可以结合或分离该线程。因为这主要是为了确保在退出一个作用域之前线程都已完成，我把这个类称为<code class="calibre10">scoped</code>
+ _<code class="calibre10">thread</code>
+ 。其实现如清单2.6所示，同时附带一个简单的示例。</p>
+<p class="calibre17">
+<strong class="calibre3">清单2.6　 scoped_thread和示例用法</strong>
+</p>
+<p class="calibre16"><img alt="图像说明文字" src="Image00028.jpg" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="图像说明文字" src="Image00029.jpg" class="calibre15"/>
+</p>
+<p class="zw">这个例子与清单2.3类似，但是新线程被直接传递到<code class="calibre10">scoped</code>
+ _<code class="calibre10">thread</code>
+ ❹，而不是为它创建一个单独的命名变量。当初始线程到达<code class="calibre10">f</code>
+ ❺的结尾时，<code class="calibre10">scoped</code>
+ _<code class="calibre10">thread</code>
+ 对象被销毁，然后结合❸提供给构造函数❶的线程。使用清单2.3中的<code class="calibre10">thread</code>
+ _<code class="calibre10">guard</code>
+ 类，析构函数必须检查线程是不是仍然可结合，你可以在构造函数中❷来做，如果不是则引发异常。</p>
+<p class="zw">
+<code class="calibre10">std::thread</code>
+ 对移动的支持同样考虑了<code class="calibre10">std::thread</code>
+ 对象的容器，如果那些容器是移动感知的（如更新后的<code class="calibre10">std::vector&lt;&gt;</code>
+ ）。这意味着你可以编写像清单2.7中的代码，生成一批线程，然后等待它们完成。</p>
+<p class="calibre17">
+<strong class="calibre3">清单2.7　生成一批线程并等待它们完成</strong>
+</p>
+<p class="calibre16"><img alt="图像说明文字" src="Image00030.jpg" class="calibre15"/>
+</p>
+<p class="zw">如果线程是被用来细分某种算法的工作，这往往正是所需的。在返回调用者之前，所有线程必须全都完成。当然，清单2.7的简单结构意味着由线程所做的工作是自包含的，同时它们操作的结果纯粹是共享数据的副作用。如果<code class="calibre10">f()</code>
+ 向调用者返回一个依赖于这些线程的操作结果的值，那么正如所写的这样，该返回值就得通过检查线程终止后的共享数据来决定。在线程间转移操作结果的替代方案将在第4章中讨论。</p>
+<p class="zw">将<code class="calibre10">std::thread</code>
+ 对象放到<code class="calibre10">std::vector</code>
+ 中是线程迈向自动管理的一步。与其为那些线程创建独立的变量并直接与之结合，不如将它们视为群组。你可以进一步创建在运行时确定的动态数量的线程，更进一步地利用这一步，而不是如清单2.7中的那样创建固定的数量。</p>
+<h2 id="nav_point_40" class="calibre11">2.4　在运行时选择线程数量</h2>
+<p class="zw">C++标准库中对此有所帮助的特性是<code class="calibre10">std::thread::hardware</code>
+ _<code class="calibre10">currency()</code>
+ 。这个函数返回一个对于给定程序执行时能够真正并发运行的线程数量的指示。例如，在多核系统上它可能是CPU核心的数量。它仅仅是一个提示，如果该信息不可用则函数可能会返回0，但它对于在线程间分割任务是一个有用的指南。</p>
+<p class="zw">清单2.8展示了<code class="calibre10">std::accumulate</code>
+ 的一个简单的并行版本实现。它在线程之间划分所做的工作，使得每个线程具有最小数目的元素以避免过多线程的开销。请注意，该实现假定所有的操作都不引发异常，即便异常可能会发生。例如，<code class="calibre10">std::thread</code>
+ 构造函数如果不能启动一个新的执行线程那么它将引发异常。在这样的算法中处理异常超出了这个简单示例的范围，将放在第8章中阐述。</p>
+<p class="calibre17">
+<strong class="calibre3">清单2.8　 std::accumulate的简单的并行版本</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\29.tif" src="Image00031.gif" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="..\tu\30.tif" src="Image00032.gif" class="calibre15"/>
+</p>
+<p class="zw">虽然这是一个相当长的函数，但它实际上是很直观的。如果输入范围为空➊，只返回初始值<code class="calibre10">init</code>
+ 。否则，此范围内至少有一个元素，于是你将要处理的元素数量除以最小的块大小，以获取线程的最大数量➋。这是为了避免当范围中只有五个值时，在一个32核的机器上创建32个线程。</p>
+<p class="zw">要运行的线程数是你计算出的最大值和硬件线程数量➌的较小值。你不会想要运行比硬件所能支持的更多的线程（<strong class="calibre3">超额订阅，oversubscription</strong>
+ ），因为上下文切换将意味着更多的线程会降低性能。如果对<code class="calibre10">std::thread::hardware</code>
+ _<code class="calibre10">concurrency()</code>
+ 的调用返回0，你只需简单地替换上你所选择的数量，在这个例子中我选择了2。你不会想要运行过多的线程，因为在单核的机器上这会使事情变慢，但同样地你也不希望运行的过少，因为那样的话，你就会错过可用的并发。</p>
+<p class="zw">每个待处理的线程的条目数量是范围的长度除以线程的数量➍。如果你担心数量不能整除，没必要——稍后再来处理。</p>
+<p class="zw">既然你知道有多少个线程，你可以为中间结果创建一个<code class="calibre10">std::vector&lt;T&gt;</code>
+ ，同时为线程创建一个<code class="calibre10">std::vector&lt;std::thread&gt;</code>
+ ➎。请注意，你需要启动比<code class="calibre10">num</code>
+ _<code class="calibre10">threads</code>
+ 少一个的线程，因为已经有一个了。</p>
+<p class="zw">启动线程是个简单的循环：递进<code class="calibre10">block</code>
+ _<code class="calibre10">end</code>
+ 迭代器到当前块的结尾➏，并启动一个新的线程来累计此块的结果➐。下一个块的开始是这一个的结束➑。</p>
+<p class="zw">当你启动了所有的线程后，这个线程就可以处理最后的块➒。这就是你处理所有未被整除的地方。你知道最后一块的结尾只能是<code class="calibre10">last</code>
+ ，无论在那个块里有多少元素。一旦累计出最后一个块的结果，你可以等待所有使用<code class="calibre10">std::for</code>
+ _<code class="calibre10">each</code>
+ 生成的线程➓，如清单2.7中所示，接着通过最后调用<code class="calibre10">std::accumulate</code>
+ 将结果累加起来⓫。</p>
+<p class="zw">在你离开这个例子前，值得指出的是在类型<code class="calibre10">T</code>
+ 的加法运算符不满足结合律的地方（如<code class="calibre10">float</code>
+ 和<code class="calibre10">double</code>
+ ），这个<code class="calibre10">parallel</code>
+ _<code class="calibre10">accumulate</code>
+ 的结果可能会跟<code class="calibre10">std::accumulate</code>
+ 的有所出入，这是将范围分组成块导致的。此外，对迭代器的需求要更严格一些，它们必须至少是<strong class="calibre3">前向迭代器（forward iterators</strong>
+ ），然而<code class="calibre10">std::accumulate</code>
+ 可以和单通<strong class="calibre3">输入迭代器（input iterators</strong>
+ ）一起工作，同时<code class="calibre10">T</code>
+ 必须是<strong class="calibre3">可默认构造的（default constructible</strong>
+ ）以使得你能够创建<code class="calibre10">results</code>
+ 向量。这些需求的各种变化是并行算法很常见的；就其本质而言，它们以某种方式的不同是为了使其并行，并且在结果和需求上产生影响。并行算法会在第8章中进行更深入的阐述。另外值得一提的是，因为你不能直接从一个线程中返回值，所以你必须将相关项的引用传入<code class="calibre10">results</code>
+ 向量中。从线程中返回结果的替代方法，会在第4章中通过使用<strong class="calibre3">
+<strong class="calibre3">future</strong>
+</strong>
+ 来实现。</p>
+<p class="zw">在这种情况下，每个线程所需的所有信息在线程开始时传入，包括存储其计算结果的位置。实际情况并非总是如此。有时，作为进程的一部分有必要能够以某种方式标识线程。你可以传入一个标识数，如同在清单2.7中<code class="calibre10">i</code>
+ 的值，但是如果需要此标识符的函数在调用栈中深达数个层次，并且可能从任意线程中被调用，那样做就很不方便。当我们设计C++线程库时就预见到了这方面的需求，所以每个线程都有一个唯一的标识符。</p>
+<h2 id="nav_point_41" class="calibre11">2.5　标识线程</h2>
+<p class="zw">线程标识符是<code class="calibre10">std::thread::id</code>
+ 类型的，并且有两种获取方式。其一，线程的标识符可以通过从与之相关联的<code class="calibre10">std::thread</code>
+ 对象中通过调用<code class="calibre10">get</code>
+ _<code class="calibre10">id()</code>
+ 成员函数来获得。如果<code class="calibre10">std::thread</code>
+ 对象没有相关联的执行线程，对<code class="calibre10">get</code>
+ _<code class="calibre10">id()</code>
+ 的调用返回一个默认构造的<code class="calibre10">std::thread::id</code>
+ 对象，表示“没有线程”。另外，当前线程的标识符，可以通过调用<code class="calibre10">std::this</code>
+ _<code class="calibre10">thread::get</code>
+ _<code class="calibre10">id()</code>
+ 获得，这也是定义在<code class="calibre10">&lt;thread&gt;</code>
+ 头文件中的。</p>
+<p class="zw">
+<code class="calibre10">std::thread::id</code>
+ 类型的对象可以自由地复制和比较；否则，它们作为标识符就没什么大用处。如果两个<code class="calibre10">std::thread::id</code>
+ 类型的对象相等，则它们代表着同一个线程，或两者都具有“没有线程”的值。如果两个对象不相等，则它们代表着不同的线程，或其中一个代表着线程，而另一个具有“没有线程”的值。</p>
+<p class="zw">线程库不限制你检查线程的标识符是否相同，<code class="calibre10">std::thread::id</code>
+ 类型的对象提供了一套完整的比较运算符，提供了所有不同值的总排序。这就允许它们在关系型容器中被用作主键，或是被排序，或者任何作为程序员的你认为合适的方式进行比较。比较运算符为<code class="calibre10">std::thread::id</code>
+ 所有不相等的值提供了一个总的排序，所以它们表现为你直觉上期望的那样：如果<code class="calibre10">a&lt;b</code>
+ 且<code class="calibre10">b&lt;c</code>
+ ，那么<code class="calibre10">a&lt;c</code>
+ ，等等。标准库还提供了<code class="calibre10">std::hash&lt;std::thread::id&gt;</code>
+ ，使得<code class="calibre10">std::thread::id</code>
+ 类型的值可在新的无序关系型容器中作为主键来用。</p>
+<p class="zw">
+<code class="calibre10">std::thread::id</code>
+ 的实例常被用来检查一个线程是否需要执行某些操作。例如，如果线程像在清单2.8中那样的被用来分配工作，启动了其他线程的初始线程在需要做的工作可能会在算法中略有不同。在这种情况下，它可以在启动其他线程之前存储<code class="calibre10">std::this</code>
+ _<code class="calibre10">thread::get</code>
+ _<code class="calibre10">id()</code>
+ 的结果，然后算法的核心部分（这对所有线程都是公共的）可以对照所存储的值来检查自己的线程ID。</p>
+<p class="calibre16"><img alt="..\tu\32.tif" src="Image00033.gif" class="calibre15"/>
+</p>
+<p class="zw">另外，当前线程的<code class="calibre10">std::thread::id</code>
+ 可以作为操作的一部分而存储在数据结构中。以后在相同数据结构上的操作可以对照执行此操作的线程ID来检查所存储的ID，来确定哪些操作是允许的/需要的。</p>
+<p class="zw">类似地，线程ID可以指定的数据需要与一个线程进行关联，并且诸如线程局部存储这样的替代机制不适用的地方，用作关系型容器的主键。例如这样的一个容器，它可以被控制线程用来存储关于在它控制下的每个线程的信息，或是在线程之间传递信息。</p>
+<p class="zw">这种想法就是，在大多数情况下，<code class="calibre10">std::thread::id</code>
+ 足以作为线程的通用标识符。只有当标识符具有与其相关联的语义（比如作为数组的索引）时，才有必要用替代方案。你甚至可以将一个<code class="calibre10">std::thread::id</code>
+ 实例写到诸如<code class="calibre10">std::cout</code>
+ 这样的输出流中。</p>
+<p class="calibre16"><img alt="..\tu\32b.tif" src="Image00034.gif" class="calibre15"/>
+</p>
+<p class="zw">你得到的确切的输出，严格取决于实现；标准给定的唯一保证是，比较结果相等的线程ID应该产生相同的输出，而那些比较结果不相等的应该给出不同的输出。因此，这主要是对调试和日志有用，但数值是没有语义的，所以也没有更多可说的了。</p>
+<h2 id="nav_point_42" class="calibre11">2.6　小结</h2>
+<p class="zw">在这一章中，我介绍了线程管理与C++标准库的基本知识：启动线程，等待其完成，以及因为你希望它们在后台运行而不等待其完成。你还看到了如何在线程开始时将参数传递给线程函数，如何将管理线程的责任从代码的一个部分转移到另一个部分，以及如何用线程组来做分配工作。最后，我讨论了标识线程，以便关联数据或是不方便通过替代方法进行关联的特定线程的行为。尽管你可以使用运行在独立数据上的完全独立的线程做很多事情，例如在清单2.8中那样，但有些时候，当线程运行时在它们之间共享数据是更理想的。第3章围绕直接在线程间共享数据进行讨论，而第4章围绕有或没有共享数据的同步操作涵盖更一般性的问题。</p>
+<p class="zw"><br class="calibre7"/>
+</p>
+<div class="calibre5"></div>
+
+
+
+  </div>
+
+  
+  <div class="calibreToc">
+    <h2><a href="../../1w54d-4vylw.html">Table of contents
+</a></h2>
+    <div>
+  <ul>
+    <li>
+      <a href="text00002.html">版权信息</a>
+    </li>
+    <li>
+      <a href="text00003.html#nav_point_0">版权声明</a>
+    </li>
+    <li>
+      <a href="text00004.html#nav_point_1">内容提要</a>
+    </li>
+    <li>
+      <a href="text00005.html#nav_point_2">序</a>
+    </li>
+    <li>
+      <a href="text00006.html#nav_point_3">译者简介</a>
+    </li>
+    <li>
+      <a href="text00008.html#nav_point_4">致谢</a>
+    </li>
+    <li>
+      <a href="text00009.html#nav_point_5">前言</a>
+      <ul>
+        <li>
+          <a href="text00009.html#nav_point_6">路线图</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_7">谁应该阅读本书</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_8">如何使用本书</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_9">代码约定和下载</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_10">软件需求</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_11">作者在线</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00010.html#nav_point_12">资源</a>
+      <ul>
+        <li>
+          <a href="text00010.html#nav_point_13">印刷资源</a>
+        </li>
+        <li>
+          <a href="text00010.html#nav_point_14">在线资源</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00011.html#nav_point_15">简要目录</a>
+    </li>
+    <li>
+      <a href="text00012.html#nav_point_16">第1章 你好，C++并发世界</a>
+      <ul>
+        <li>
+          <a href="text00012.html#nav_point_17">1.1 什么是并发</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_18">1.1.1 计算机系统中的并发</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_19">1.1.2 并发的途径</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_20">1.2 为什么使用并发</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_21">1.2.1 为了划分关注点而使用并发</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_22">1.2.2 为了性能而使用并发</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_23">1.2.3 什么时候不使用并发</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_24">1.3 在C++中使用并发和多线程</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_25">1.3.1 C++多线程历程</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_26">1.3.2 新标准中的并发支持</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_27">1.3.3 C++线程库的效率</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_28">1.3.4 平台相关的工具</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_29">1.4 开始入门</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_30">你好，并发世界</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_31">1.5 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00013.html#nav_point_32">第2章 管理线程</a>
+      <ul>
+        <li>
+          <a href="text00013.html#nav_point_33">2.1 基本线程管理</a>
+          <ul>
+            <li>
+              <a href="text00013.html#nav_point_34">2.1.1 启动线程</a>
+            </li>
+            <li>
+              <a href="text00013.html#nav_point_35">2.1.2 等待线程完成</a>
+            </li>
+            <li>
+              <a href="text00013.html#nav_point_36">2.1.3 在异常环境下的等待</a>
+            </li>
+            <li>
+              <a href="text00013.html#nav_point_37">2.1.4 在后台运行线程</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_38">2.2 传递参数给线程函数</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_39">2.3 转移线程的所有权</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_40">2.4 在运行时选择线程数量</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_41">2.5 标识线程</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_42">2.6 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00014.html#nav_point_43">第3章 在线程间共享数据</a>
+      <ul>
+        <li>
+          <a href="text00014.html#nav_point_44">3.1 线程之间共享数据的问题</a>
+          <ul>
+            <li>
+              <a href="text00014.html#nav_point_45">3.1.1 竞争条件</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_46">3.1.2 避免有问题的竞争条件</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00014.html#nav_point_47">3.2 用互斥元保护共享数据</a>
+          <ul>
+            <li>
+              <a href="text00014.html#nav_point_48">3.2.1 使用C++中的互斥元</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_49">3.2.2 为保护共享数据精心组织代码</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_50">3.2.3 发现接口中固有的竞争条件</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_51">3.2.4 死锁：问题和解决方案</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_52">3.2.5 避免死锁的进一步指南</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_53">3.2.6 用std::unique_lock灵活锁定</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_54">3.2.7 在作用域之间转移锁的所有权</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_55">3.2.8 锁定在恰当的粒度</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00014.html#nav_point_56">3.3 用于共享数据保护的替代工具</a>
+          <ul>
+            <li>
+              <a href="text00014.html#nav_point_57">3.3.1 在初始化时保护共享数据</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_58">3.3.2 保护很少更新的数据结构</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_59">3.3.3 递归锁</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00014.html#nav_point_60">3.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00015.html#nav_point_61">第4章 同步并发操作</a>
+      <ul>
+        <li>
+          <a href="text00015.html#nav_point_62">4.1 等待事件或其他条件</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_63">4.1.1 用条件变量等待条件</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_64">4.1.2 使用条件变量建立一个线程安全队列</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_65">4.2 使用future等待一次性事件</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_66">4.2.1 从后台任务中返回值</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_67">4.2.2 将任务与future相关联</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_68">4.2.3 生成(std::)promise</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_69">4.2.4 为future保存异常</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_70">4.2.5 等待自多个线程</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_71">4.3 有时间限制的等待</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_72">4.3.1 时钟</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_73">4.3.2 时间段</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_74">4.3.3 时间点</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_75">4.3.4 接受超时的函数</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_76">4.4 使用操作同步来简化代码</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_77">4.4.1 带有future的函数式编程</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_78">4.4.2 具有消息传递的同步操作</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_79">4.5 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00016.html#nav_point_80">第5章 C++内存模型和原子类型上操作</a>
+      <ul>
+        <li>
+          <a href="text00016.html#nav_point_81">5.1 内存模型基础</a>
+          <ul>
+            <li>
+              <a href="text00016.html#nav_point_82">5.1.1 对象和内存位置</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_83">5.1.2 对象、内存位置以及并发</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_84">5.1.3 修改顺序</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00016.html#nav_point_85">5.2 C++中的原子操作及类型</a>
+          <ul>
+            <li>
+              <a href="text00016.html#nav_point_86">5.2.1 标准原子类型</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_87">5.2.2 std::atomic_flag上的操作</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_88">5.2.3 基于std::atomic&lt;bool&gt;的操作</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_89">5.2.4 std::atomic&lt;T*&gt;上的操作：指针算术运算</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_90">5.2.5 标准原子整型的操作</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_91">5.2.6 std::atomic&lt;&gt;初级类模板</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_92">5.2.7 原子操作的自由函数</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00016.html#nav_point_93">5.3 同步操作和强制顺序</a>
+          <ul>
+            <li>
+              <a href="text00016.html#nav_point_94">5.3.1 synchronizes-with关系</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_95">5.3.2 happens-before关系</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_96">5.3.3 原子操作的内存顺序</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_97">5.3.4 释放序列和synchronizes-with</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_98">5.3.5 屏障</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_99">5.3.6 用原子操作排序非原子操作</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00016.html#nav_point_100">5.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00017.html#nav_point_101">第6章 设计基于锁的并发数据结构</a>
+      <ul>
+        <li>
+          <a href="text00017.html#nav_point_102">6.1 为并发设计的含义是什么</a>
+          <ul>
+            <li>
+              <a href="text00017.html#nav_point_103">为并发设计数据结构的准则</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00017.html#nav_point_104">6.2 基于锁的并发数据结构</a>
+          <ul>
+            <li>
+              <a href="text00017.html#nav_point_105">6.2.1 使用锁的线程安全栈</a>
+            </li>
+            <li>
+              <a href="text00017.html#nav_point_106">6.2.2 使用锁和条件变量的线程安全队列</a>
+            </li>
+            <li>
+              <a href="text00017.html#nav_point_107">6.2.3 使用细粒度锁和条件变量的线程安全队列</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00017.html#nav_point_108">6.3 设计更复杂的基于锁的数据结构</a>
+          <ul>
+            <li>
+              <a href="text00017.html#nav_point_109">6.3.1 编写一个使用锁的线程安全查找表</a>
+            </li>
+            <li>
+              <a href="text00017.html#nav_point_110">6.3.2 编写一个使用锁的线程安全链表</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00017.html#nav_point_111">6.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00018.html#nav_point_112">第7章 设计无锁的并发数据结构</a>
+      <ul>
+        <li>
+          <a href="text00018.html#nav_point_113">7.1 定义和结果</a>
+          <ul>
+            <li>
+              <a href="text00018.html#nav_point_114">7.1.1 非阻塞数据结构的类型</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_115">7.1.2 无锁数据结构</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_116">7.1.3 无等待的数据结构</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_117">7.1.4 无锁数据结构的优点与缺点</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00018.html#nav_point_118">7.2 无锁数据结构的例子</a>
+          <ul>
+            <li>
+              <a href="text00018.html#nav_point_119">7.2.1 编写不用锁的线程安全栈</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_120">7.2.2 停止恼人的泄漏：在无锁数据结构中管理内存</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_121">7.2.3 用风险指针检测不能被回收的结点</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_122">7.2.4 使用引用计数检测结点</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_123">7.2.5 将内存模型应用至无锁栈</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_124">7.2.6 编写不用锁的线程安全队列</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00018.html#nav_point_125">7.3 编写无锁数据结构的准则</a>
+          <ul>
+            <li>
+              <a href="text00018.html#nav_point_126">7.3.1 准则：使用std::memory_order_seq_cst作为原型</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_127">7.3.2 准则：使用无锁内存回收模式</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_128">7.3.3 准则：当心ABA问题</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_129">7.3.4 准则：识别忙于等待的循环以及辅助其他线程</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00018.html#nav_point_130">7.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00019.html#nav_point_131">第8章 设计并发代码</a>
+      <ul>
+        <li>
+          <a href="text00019.html#nav_point_132">8.1 在线程间划分工作的技术</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_133">8.1.1 处理开始前在线程间划分数据</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_134">8.1.2 递归地划分数据</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_135">8.1.3 以任务类型划分工作</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_136">8.2 影响并发代码性能的因素</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_137">8.2.1 有多少个处理器？</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_138">8.2.2 数据竞争和乒乓缓存</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_139">8.2.3 假共享</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_140">8.2.4 数据应该多紧密</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_141">8.2.5 过度订阅和过多的任务切换</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_142">8.3 为多线程性能设计数据结构</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_143">8.3.1 为复杂操作划分数组元素</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_144">8.3.2 其他数据结构中的数据访问方式</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_145">8.4 为并发设计时的额外考虑</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_146">8.4.1 并行算法中的异常安全</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_147">8.4.2 可扩展性和阿姆达尔定律</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_148">8.4.3 用多线程隐藏延迟</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_149">8.4.4 用并发提高响应性</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_150">8.5 在实践中设计并发代码</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_151">8.5.1 std::for_each的并行实现</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_152">8.5.2 std::find的并行实现</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_153">8.5.3 std::partial_sum的并行实现</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_154">8.6 总结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00020.html#nav_point_155">第9章 高级线程管理</a>
+      <ul>
+        <li>
+          <a href="text00020.html#nav_point_156">9.1 线程池</a>
+          <ul>
+            <li>
+              <a href="text00020.html#nav_point_157">9.1.1 最简单的线程池</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_158">9.1.2 等待提交给线程池的任务</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_159">9.1.3 等待其他任务的任务</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_160">9.1.4 避免工作队列上的竞争</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_161">9.1.5 工作窃取</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00020.html#nav_point_162">9.2 中断线程</a>
+          <ul>
+            <li>
+              <a href="text00020.html#nav_point_163">9.2.1 启动和中断另一个线程</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_164">9.2.2 检测一个线程是否被中断</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_165">9.2.3 中断等待条件变量</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_166">9.2.4 中断在std::condition_variable_any上的等待</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_167">9.2.5 中断其他阻塞调用</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_168">9.2.6 处理中断</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_169">9.2.7 在应用退出时中断后台任务</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00020.html#nav_point_170">9.3 总结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00021.html#nav_point_171">第10章 多线程应用的测试与调试</a>
+      <ul>
+        <li>
+          <a href="text00021.html#nav_point_172">10.1 并发相关错误的类型</a>
+          <ul>
+            <li>
+              <a href="text00021.html#nav_point_173">10.1.1 不必要的阻塞</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_174">10.1.2 竞争条件</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00021.html#nav_point_175">10.2 定位并发相关的错误的技巧</a>
+          <ul>
+            <li>
+              <a href="text00021.html#nav_point_176">10.2.1 审阅代码以定位潜在的错误</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_177">10.2.2 通过测试定位并发相关的错误</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_178">10.2.3 可测试性设计</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_179">10.2.4 多线程测试技术</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_180">10.2.5 构建多线程的测试代码</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_181">10.2.6 测试多线程代码的性能</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00021.html#nav_point_182">10.3 总结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00022.html#nav_point_183">附录A C++11部分语言特性简明参考</a>
+      <ul>
+        <li>
+          <a href="text00022.html#nav_point_184">A.1 右值引用</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_185">A.1.1 移动语义</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_186">A.1.2 右值引用与函数模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_187">A.2 deleted函数</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_188">A.3 defaulted函数</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_189">A.4 constexpr函数</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_190">A.4.1 constexpr与用户定义类型</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_191">A.4.2 constexpr对象</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_192">A.4.3 constexpr函数要求</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_193">A.4.4 constexpr与模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_194">A.5 lambda函数</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_195">引用局部变量的lambda函数</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_196">A.6 变参模板</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_197">展开参数包</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_198">A.7 自动推断变量的类型</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_199">A.8 线程局部变量</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_200">A.9 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00023.html#nav_point_201">附录B 并发类库简要对比</a>
+    </li>
+    <li>
+      <a href="text00024.html#nav_point_202">附录C 消息传递框架与完整的ATM示例</a>
+    </li>
+    <li>
+      <a href="text00025.html#nav_point_203">附录D C++线程类库参考</a>
+      <ul>
+        <li>
+          <a href="text00025.html#nav_point_204">D.1 &lt;chrono&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_205">D.1.1 std::chrono::duration类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_206">D.1.2 std::chrono::time_point类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_207">D.1.3 std::chrono::system_clock类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_208">D.1.4 std::chrono::steady_clock类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_209">D.1.5 std::chrono::high_resolution_clock typedef</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_210">D.2 &lt;condition_variable&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_211">D.2.1 std::condition_variable类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_212">D.2.2 std::condition_variable_any类</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_213">D.3 &lt;atomic&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_214">D.3.1 std::atomic_xxx typedef</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_215">D.3.2 ATOMIC_xxx_LOCK_FREE宏</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_216">D.3.3 ATOMIC_VAR_INIT宏</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_217">D.3.4 std::memory_order枚举</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_218">D.3.5 std::atomic_thread_fence函数</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_219">D.3.6 std::atomic_signal_fence函数</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_220">D.3.7 std::atomic_flag类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_221">D.3.8 std::atomic类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_222">D.3.9 std::atomic模板的特化</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_223">D.3.10 std::atomic&lt;integral-type&gt;特化</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_224">D.3.11 std::atomic&lt;T*&gt;偏特化</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_225">D.4 &lt;future&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_226">D.4.1 std::future类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_227">D.4.2 std::shared_future类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_228">D.4.3 std::packaged_task类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_229">D.4.4 std::promise类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_230">D.4.5 std::async函数模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_231">D.5 &lt;mutex&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_232">D.5.1 std::mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_233">D.5.2 std::recursive_mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_234">D.5.3 std::timed_mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_235">D.5.4 std::recursive_timed_mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_236">D.5.5 std::lock_guard类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_237">D.5.6 std::unique_lock类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_1">D.5.7 std::lock函数模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_2">D.5.8 std::try_lock函数模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_3">D.5.9 std::once_flag类</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_4">D.5.10 std::call_once函数模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#sigil_toc_id_5">D.6 &lt;ratio&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#sigil_toc_id_6">D.6.1 std::ratio类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_7">D.6.2 std::ratio_add模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_8">D.6.3 std::ratio_subtract模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_9">D.6.4 std::ratio_multiply模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_10">D.6.5 std::ratio_divide模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_11">D.6.6 std::ratio_equal类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_12">D.6.7 std::ratio_not_equal类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_13">D.6.8 std::ratio_less类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_14">D.6.9 std::ratio_greater类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_15">D.6.10 std::ratio_less_equal类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_16">D.6.11 std::ratio_greater_equal类模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#sigil_toc_id_17">D.7 &lt;thread&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#sigil_toc_id_18">D.7.1 std::thread类</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_19">D.7.2 this_thread命名空间</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00026.html#nav_point_238">欢迎来到异步社区！</a>
+      <ul>
+        <li>
+          <a href="text00026.html#nav_point_239">异步社区的来历</a>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_240">社区里都有什么？</a>
+          <ul>
+            <li>
+              <a href="text00026.html#nav_point_241">购买图书</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_242">下载资源</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_243">与作译者互动</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_244">灵活优惠的购书</a>
+          <ul>
+            <li>
+              <a href="text00026.html#nav_point_245">纸电图书组合购买</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_246">社区里还可以做什么？</a>
+          <ul>
+            <li>
+              <a href="text00026.html#nav_point_247">提交勘误</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_248">写作</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_249">会议活动早知道</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_250">加入异步</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00027.html#sigil_toc_id_20">看完了</a>
+    </li>
+  </ul>
+</div>
+
+
+  </div>
+  
+
+  <div class="calibreEbNav">
+    
+      <a href="text00012.html" class="calibreAPrev">previous page
+</a>
+    
+
+    <a href="../../1w54d-4vylw.html" class="calibreAHome">start
+</a>
+
+    
+      <a href="text00014.html" class="calibreANext">next page
+</a>
+    
+  </div>
+
+</div>
+
+</body>
+</html>

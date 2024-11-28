@@ -1,0 +1,1724 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+
+    <title>Unknown</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="../stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="../page_styles.css" rel="stylesheet" type="text/css"/>
+
+  
+
+
+<link href="../calibreHtmlOutBasicCss.css" type="text/css" rel="stylesheet" />
+
+</head>
+<body>
+
+<div class="calibreMeta">
+  <div class="calibreMetaTitle">
+  
+  
+    
+    <h1>
+      <a href="../../1w54d-4vylw.html">C++并发编程实战
+</a>
+    </h1>
+    
+    
+  
+  </div>
+  <div class="calibreMetaAuthor">
+    威廉姆斯(Anthony Williams)
+
+  </div>
+</div>
+
+<div class="calibreMain">
+
+  <div class="calibreEbookContent">
+    
+      <div class="calibreEbNavTop">
+        
+          <a href="text00016.html" class="calibreAPrev">previous page
+</a>
+        
+
+        
+          <a href="text00018.html" class="calibreANext">next page
+</a>
+        
+      </div>
+    
+
+    
+<h1 id="nav_point_101" class="not-in-toc">第6章　设计基于锁的并发数据结构</h1>
+<p class="zw">
+<strong class="calibre3">本章主要内容</strong>
+</p>
+<ul class="calibre13">
+<li class="di_1ji_wu_xu_lie_biao">
+<strong class="calibre3">为并发设计数据结构的含义</strong>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<strong class="calibre3">这么做的准则</strong>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<strong class="calibre3">实现设计满足并发性的数据结构的例子</strong>
+</li>
+</ul>
+<p class="zw">上一章中我们寻找原子操作和存储器模式的底层细节。在这一章中，我们先不探讨底层细节（尽管第7章中我们需要用到它们）而是考虑数据结构。</p>
+<p class="zw">程序设计问题中选择什么样的数据结构是总体解决方法的关键部分，对于并行程序设计问题也不例外。如果多线程用到了数据结构，那么此数据结构要么完全不可变，即从不发生变化也不需要同步，要么程序设计中就要保障线程间能正确同步变化。一种选择就是使用单独的互斥元和外部锁来保护数据，使用我们在第3章和第4章中提到的技术，另外一种选择就是设计一个可以同时访问的数据结构。</p>
+<p class="zw">当为并发性设计数据结构时，你可以使用前面章节中介绍的多线程应用程序中的基本构造模块，例如互斥元和条件变量。实际上，我们已经看到了几个例子，显示了如何将这些基本部分组合起来写入数据结构并保证当前多线程数据的安全性。</p>
+<p class="zw">这章中，我们首先考虑为并发性设计数据结构时的一般准则。然后我们采取基本构造模块和条件变量，并且在我们进入到更加复杂的数据结构前先回顾一下这些基础数据结构。在第7章中，我们考虑如何回到基础并且使用第5章中描述的原子操作来建立无锁的数据结构。</p>
+<p class="zw">那么，言归正传，让我们考虑为并发性设计一种数据结构时需要涉及到哪些方面。</p>
+<h2 id="nav_point_102" class="calibre11">6.1　为并发设计的含义是什么</h2>
+<p class="zw">在最基本的层面，为并发设计数据结构意味着多个线程可以同时使用此数据结构，执行相同或不同的操作，并且每个线程都有数据结构的一致性视图。不会丢失或破坏数据，维持所有不变量，并且没有不确定的竞争条件，此种数据结构就被称为线程安全的。通常，只有在特定的并发存取下，一种数据结构才是安全的。很有可能出现这种情况，就是多个线程对数据结构执行同一种操作，然而另一个线程的操作需要进行独占访问。或者，也许多个线程执行<strong class="calibre3">不同</strong>
+ 的操作，它们并发地存取某个数据结构是安全的。然而多个线程执行相同的操作，它们并发地存取某个数据结构可能会有问题。</p>
+<p class="zw">实际上并发设计远远不只是为多个线程提供存取数据结构的<strong class="calibre3">并发机会</strong>
+ 。本质上，互斥元提供的是<strong class="calibre3">互斥</strong>
+ ，一次只允许一个线程获取互斥元的锁。一个互斥元通过明确<strong class="calibre3">阻止</strong>
+ 对它所保护的数据进行并发存取来保护数据结构。</p>
+<p class="zw">这被称为<strong class="calibre3">序列化（serialization）</strong>
+ ：多个线程轮流存取互斥元保护的数据，它们必须线性地而非并发地存取数据。所以，你必须仔细考虑数据结构的设计来实现真正的并发存取。一些数据结构比别的数据结构在并发性上有更大的范围，但是在所有的情况下，其思想是一致的：更小的保护区域，更少的操作被序列化，以及更高的并发潜能。</p>
+<p class="zw">在我们考虑某个数据结构设计前，我们先来回顾设计并发性时需要考虑的一些简单准则。</p>
+<h3 id="nav_point_103" class="calibre14">为并发设计数据结构的准则</h3>
+<p class="zw">就像我提到的，为并发存取设计数据结构时，你需要考虑两方面：保证存取是<strong class="calibre3">安全</strong>
+ 的以及<strong class="calibre3">允许</strong>
+ 真正的并发存取。第3章中我阐述了如何使得数据结构线程安全的基本原理。</p>
+<ul class="calibre13">
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">保证当数据结构不变性被别的线程破坏时的状态不被任何别的线程看到。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">注意避免数据结构接口所固有的竞争现象，通过为完整操作提供函数，而不是提供操作步骤。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">注意当出现例外时，数据结构是怎样来保证不变性不被破坏的。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">当使用数据结构时，通过限制锁的范围和避免使用嵌套锁，来降低产生死锁的机会。</span>
+</li>
+</ul>
+<p class="zw">在考虑这些细节前，先考虑使用数据结构时的限制条件也是很重要的，如果一个函数通过特殊函数使用数据结构，那么其他线程调用哪个函数是安全的？</p>
+<p class="zw">这是要考虑的关键性问题。大多数构造函数和析构函数需要以独占方式访问数据结构，但是需要使用者保证它们在构造函数完成前或者析构函数开始后没有被使用。如果数据结构支持赋值、<code class="calibre10">swap()</code>
+ 、或复制构造，那么作为数据结构的设计者，就需要决定这些操作与别的操作同时被调用时是否安全，或者是否需要使用者保证互斥访问，即使操作数据结构的大部分函数可能被多线程同时访问时没有问题。</p>
+<p class="zw">第二个要考虑的方面就是实现真正的并发存取。我没办法在这里给出详尽的准则；而是，这里有一列问题，作为数据结构设计者需要问问你自己。</p>
+<ul class="calibre13">
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">锁的范围能否被限定，使得一个操作的一部分可以在锁外被执行？</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">数据结构的不同部分能否被不同的互斥元保护？</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">是否所有操作需要同样级别的保护？</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">数据结构的一个小改变能否在不影响操作语义情况下提高并发性的机会？</span>
+</li>
+</ul>
+<p class="zw">所有这些问题都被一个想法所指导：如何能够最小化必然发生的序列化，并且能够最大限度地实现并发性？通常，当多个线程仅仅读取数据结构时可以并发访问此数据结构，但是一个线程必须以独占方式修改数据结构。使用构造函数<code class="calibre10">boost::shared_mutex</code>
+ 可以实现此功能。而且，很快你就会看到，数据结构支持执行不同操作的线程和执行相同操作的序列化线程并发访问它。</p>
+<p class="zw">最简单的线程安全数据结构通常使用互斥元和锁来保护数据。就像第3章中提到的，比较简单的方式是保证每次只有一个线程使用此数据结构，尽管这种方式也会存在问题。为了让你轻松了解线程安全数据结构的设计，本章我们研究这种基于锁的数据结构，在第7章中我们将研究无锁的并发数据结构的设计。</p>
+<h2 id="nav_point_104" class="calibre11">6.2　基于锁的并发数据结构</h2>
+<p class="zw">设计基于锁的并发数据结构关键是要确保存取数据时要锁住正确的互斥元，并且要确保将锁的时间最小化。只用一个互斥元保护一个数据结构是很困难的。你需要确保此数据在互斥锁保护区域之外不会被存取，并且不会发生接口所固有的竞争现象。如果使用独立的互斥元来保护数据结构的独立部分，问题会变得更复杂，并且如果数据结构上的操作需要多个互斥元被锁住就有可能产生死锁。因此，设计有多个互斥元的数据结构时，需要比设计只有一个互斥元的数据结构考虑得更细致。</p>
+<p class="zw">在这部分，将6.1.1节中的准则运用到一些简单数据结构的设计中，使用互斥元和锁来保护数据。在不同的情况下，你可以找到机会在确保数据结构仍然线程安全的情况下能够有更大的并发性。</p>
+<p class="zw">首先我们回顾一下第3章中提到的栈实现，这大约是最简单的一种数据结构，而且它只是使用了一个互斥元。它是否真的线程安全？它距离实现真正的并发性到底有多远呢？</p>
+<h3 id="nav_point_105" class="calibre14">6.2.1　使用锁的线程安全栈</h3>
+<p class="zw">在清单6.1中会重现第3章中的线程安全栈。目的是为<code class="calibre10">std::stack&lt;&gt;</code>
+ 写一个相似的线程安全数据结构，支持数据入栈和出栈。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.1　线程安全栈的类定义</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\151.tif" src="Image00144.gif" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="..\tu\152.tif" src="Image00145.gif" class="calibre15"/>
+</p>
+<p class="zw">让我们轮流看看每个准则，以及它们是如何应用的。</p>
+<p class="zw">首先，如你所见，基本的线程安全是通过使用互斥锁<code class="calibre10">m</code>
+ 保护成员函数来实现的。这就确保了同一时间只有一个线程在存取数据，因此每个成员函数都保持了不变量，没有线程会看到一个破坏的不变量。</p>
+<p class="zw">其次，<code class="calibre10">empty()</code>
+ 和任何一个<code class="calibre10">pop()</code>
+ 函数间都可能产生竞争条件，但是当<code class="calibre10">pop()</code>
+ 持有锁的时候，这段代码会明确地检查它所包含的栈，因此竞争条件就不成问题了。调用<code class="calibre10">pop()</code>
+ 时会直接返回出栈的数据项，就避免了类似于<code class="calibre10">std::stack&lt;&gt;</code>
+ 中单独的成员函数<code class="calibre10">top()</code>
+ 和<code class="calibre10">pop()</code>
+ 间可能产生的竞争条件。</p>
+<p class="zw">下一个，这里可能会抛出一些异常。锁住一个互斥元可能会抛出异常，这不仅是极其罕见的（因为这就表明互斥元有问题或者缺乏系统资源），也是每个成员函数的第一个操作。因为没有数据被修改，所以是安全的。解锁一个互斥元总是成功的，所以总是安全的，并且使用<code class="calibre10">std::lock_guard&lt;&gt;</code>
+ 保证了在成员函数结束的时候互斥元不会被锁定。</p>
+<p class="zw">调用<code class="calibre10">data.push()</code>
+ ❶可能会抛出异常，如果复制或者移动数据项抛出异常或者不能分配足够的内存来扩展下层的数据结构。不管怎样，<code class="calibre10">std::stack&lt;&gt;</code>
+ 保证了它是安全的，因此这也不是一个问题。</p>
+<p class="zw">在函数<code class="calibre10">pop()</code>
+ 重载的第一种形式中，它的代码可能会抛出一个<code class="calibre10">empty_stack</code>
+ 异常❷，但是没有做任何修改，因此它是安全的。创建<code class="calibre10">res</code>
+ ❸时因为一些原因可能会抛出异常：调用<code class="calibre10">std::make_shared</code>
+ 可能会抛出异常，因为它无法为新对象和需要引用计数的内部数据分配内存。当复制构造函数或移动构造函数中返回的数据项被复制/移动到新分配的内存时也可能会抛出异常。在这两种情况下，C++运行库和标准库确保没有内存泄露并且新对象（如果存在的话）被正确销毁。因为你<strong class="calibre3">仍然</strong>
+ 没有修改下层的栈，所以没有问题。作为结果的返回值，调用<code class="calibre10">data.pop()</code>
+ ❹保证了不会抛出异常，因此<code class="calibre10">pop()</code>
+ 的重载是异常安全的。</p>
+<p class="zw">函数<code class="calibre10">pop()</code>
+ 重载的第二种形式是类似的，只不过这次是拷贝赋值或移动赋值操作符抛出异常❺，而不是构造新对象和一个<code class="calibre10">std::shared_ptr</code>
+ 实例抛出异常。同样，你实际上并没有修改数据结构直到调用<code class="calibre10">data.pop()</code>
+ ❻，这仍然保证了不会抛出异常，因此这一重载也是异常安全的。</p>
+<p class="zw">最后，<code class="calibre10">empty()</code>
+ 不修改任何数据，因此是异常安全的。</p>
+<p class="zw">这里会有产生死锁的可能，因为当持有锁时调用了用户代码：拷贝构造函数或移动构造函数❶、❸，以及内含数据项的拷贝赋值操作或移动赋值操作❺，以及可能由用户定义的<code class="calibre10">new</code>
+ 操作符。如果当数据项被插入栈或从栈中移出时，这些函数调用了栈的成员函数，或者当栈成员函数被调用时，这些函数请求一个锁的时候保持着另一个锁，就有可能产生死锁。然而，要求栈的使用者做出如下保证是明智的：你不能理所当然地在没有复制数据项或为之分配内存的情况下，将它加入栈或者从栈中移走它。</p>
+<p class="zw">因为所有的成员函数都使用<code class="calibre10">std::lock_guard&lt;&gt;</code>
+ 来保护数据，所以多个线程调用<code class="calibre10">stack</code>
+ 的成员函数是安全的。成员函数中只有构造函数和析构函数是不安全的，但是这不是一个特殊问题，对象只能被构造和销毁一次。在一个没有完全构造好的对象或部分析构对象上调用成员函数永远都不是一个好主意。因此，使用者必须保证在它被完全构造前别的线程不能存取栈，并且在它被完全销毁前，所有线程结束存取栈。</p>
+<p class="zw">尽管对多线程来说，因为使用了锁，每次只有一个线程对栈数据结构进行操作，所以同时调用成员函数是安全的。但是当<code class="calibre10">stack</code>
+ 上存在显著的竞争时，线程<strong class="calibre3">序列化</strong>
+ 可能会限制应用的性能。当一个线程在等待锁的时候，它就做不了任何有用的工作。并且，栈没有为等待数据项被插入的线程提供任何方式的准备，因此如果一个线程需要等待，它就会反复地调用<code class="calibre10">empty()</code>
+ ，或者只是调用<code class="calibre10">pop()</code>
+ ，并且捕捉<code class="calibre10">empty_stack</code>
+ 异常。如果这种情况发生的话，这种栈实现就成为一个比较糟糕的选择，因为一个等待中的线程要么消耗宝贵的资源在检查数据上，要么用户必须写外部的等待和通知代码（比如，使用条件变量），而这就有可能让内部锁变得无效并且造成浪费。第4章中的队列在数据结构中使用了条件变量，这就提供了一种数据结构中包含等待的方法。因此下面我们来看一看。</p>
+<h3 id="nav_point_106" class="calibre14">6.2.2　使用锁和条件变量的线程安全队列</h3>
+<p class="zw">清单6.2中重现了第4章中提到的线程安全队列。类似于栈是以<code class="calibre10">std::stack&lt;&gt;</code>
+ 建模的，队列是以<code class="calibre10">std::queue&lt;&gt;</code>
+ 来建模的。此外，它的接口与标准容器适配器的接口是不同的，因为它要满足其数据结构对于来自多线程的并发访问是安全的这一约束。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.2　使用条件变量的线程安全队列的完整类定义</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\154.tif" src="Image00146.gif" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="..\tu\155.tif" src="Image00147.gif" class="calibre15"/>
+</p>
+<p class="zw">清单6.2中所示的队列实现的结构与清单6.1中所示的栈的结构是类似的，除了<code class="calibre10">push()</code>
+ ❶中调用的<code class="calibre10">data_cond.notify_one()</code>
+ 以及<code class="calibre10">wait_and_pop()</code>
+ 函数❷、❸。<code class="calibre10">try_pop()</code>
+ 的两种重载形式与清单6.1中的<code class="calibre10">pop()</code>
+ 函数的两种重载形式基本上是相同的，区别在于当队列为空的时候，<code class="calibre10">try_pop()</code>
+ 函数不引发异常。<code class="calibre10">try_pop()</code>
+ 函数要么返回一个表明是否取回一个值的<code class="calibre10">bool</code>
+ 值，要么在返回指针的重载❺没能取到值的时候返回<code class="calibre10">NULL</code>
+ ，这也是实现栈的有效方式。因此，如果不包括<code class="calibre10">wait_and_pop()</code>
+ 函数，为栈应用所做的分析同样适用此。</p>
+<p class="zw">新的<code class="calibre10">wait_and_pop()</code>
+ 函数是一种解决等待队列入口问题的方法，与反复调用<code class="calibre10">empty()</code>
+ 函数不同，等待中的线程可以通过调用<code class="calibre10">wait_and_pop()</code>
+ 函数，然后数据结构使用条件变量来处理这种等待状态。对<code class="calibre10">data_cond.wait()</code>
+ 的调用直到下层队列中至少有一个元素时，才会返回，因此你不用担心在代码的这个地方队列为空的可能性，数据仍然被互斥元上的锁保护着。这些函数不会增加任何新的竞争条件和死锁的可能性，并且维持了不变量。</p>
+<p class="zw">当一个元素进入队列时，如果不止一个线程处于等待状态，关于异常安全就会有点崎岖，只有一个线程会被<code class="calibre10">data_cond.notify_one()</code>
+ 的调用唤醒。然而，如果被唤醒的线程在<code class="calibre10">wait_and_pop()</code>
+ 中引发异常，例如构造<code class="calibre10">std::shared_ptr&lt;&gt;</code>
+ 的时候❹，那么就没有线程将被唤醒。如果不能接受这一点，那么可以用<code class="calibre10">data_cond.notify_all()</code>
+ 来代替<code class="calibre10">data_cond.notify_one()</code>
+ ，前者将唤醒所有在等待的线程，代价就是当最后它们发现队列为空的时候，其中的大部分线程都要重新进入睡眠状态。第二种替代方法就是，当引发异常的时候，让<code class="calibre10">wait_and_pop()</code>
+ 调用<code class="calibre10">notify_one()</code>
+ ，这样另外一个线程可以尝试获取所存储的值。第三种替代方法，是将<code class="calibre10">std::shared_ptr&lt;&gt;</code>
+ 的初始化移动到<code class="calibre10">push()</code>
+ 调用，并且存储<code class="calibre10">std::shared_ptr&lt;&gt;</code>
+ 实例而不是直接存储值。将内部的<code class="calibre10">std::queue&lt;&gt;</code>
+ 复制到<code class="calibre10">std::shared_ptr&lt;&gt;</code>
+ 并不会引发异常，因此<code class="calibre10">wait_and_pop()</code>
+ 又是安全的了。清单6.3展示了使用这一思想重新修订以后的队列实现。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.3　包含std::shared_ptr&lt;&gt;实例的线程安全队列</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\156.tif" src="Image00148.gif" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="..\tu\157.tif" src="Image00149.gif" class="calibre15"/>
+</p>
+<p class="zw">通过<code class="calibre10">std::shared_ptr&lt;&gt;</code>
+ 持有数据的基本效果是直观的：接受一个对变量的引用来获取新值的pop函数，现在必须得解引用所存储的指针❶、❷，返回一个<code class="calibre10">std::shared_ptr&lt;&gt;</code>
+ 实例的pop函数可以在返回调用前从队列中取得这个数❸、❹。</p>
+<p class="zw">如果数据由<code class="calibre10">std::shared_ptr&lt;&gt;</code>
+ 持有，那么有一个额外的好处：可以在<code class="calibre10">push()</code>
+ 的锁外面完成此新实例的分配❺，然而在清单6.2中，就必须在<code class="calibre10">pop()</code>
+ 持有锁的情况下才能这样做。因为内存分配通常是很昂贵的操作，这种方式就有助于提高队列的性能，因为它也减少了持有互斥元的时间，允许其他线程同时在队列上执行操作。</p>
+<p class="zw">就像之前栈的例子一样，使用互斥元来保护整个数据结构限制了队列所支持的并发。尽管多个线程可能在不同的成员函数中被阻塞，但是一次只有一个线程可以进行操作。尽管如此，部分限制来自于在实现中使用<code class="calibre10">std::queue&lt;&gt;</code>
+ ；通过使用标准容器，你基本上有了一个受到保护或者没受到保护的数据项。通过控制数据结构的详细实现，可以提供更细粒度的锁定，并且实现更高级别的并发。</p>
+<p class="calibre8"><img alt="..\14-1316(tu)\06-01.tif" src="Image00150.jpg" class="calibre15"/>
+</p>
+<p class="tu_ti">图6.1　用单链表表示的队列</p>
+<h3 id="nav_point_107" class="calibre14">6.2.3　使用细粒度锁和条件变量的线程安全队列</h3>
+<p class="zw">在清单6.2和清单6.3中，有一个被保护的数据项（<code class="calibre10">data_queue</code>
+ ）和一个互斥元。为了使用细粒度锁，你需要瞧一瞧队列的组成部分，并且将一个互斥元与每个不同的数据项联系起来。</p>
+<p class="zw">实现队列最简单的数据结构为单链表，如图6.1所示。队列包含一个<strong class="calibre3">头（head）</strong>
+ 指针，指向链表的第一项，并且每一项都指向下一项。将数据项从队列中移走时，首先将头指针指向下一个数据项，然后返回以前头指针所指向的数据项。</p>
+<p class="zw">数据项被添加到队列的另一端。为了实现这一点，队列还包含一个<strong class="calibre3">尾（tail）</strong>
+ 指针，指向链表的最后一项。通过将最后一项的<strong class="calibre3">next</strong>
+ 指针指向新结点，然后将尾指针更新为指向新的一项，可以实现添加结点。当链表为空时，头指针和尾指针均为<code class="calibre10">NULL</code>
+ 。</p>
+<p class="zw">清单6.4展示了这种队列的简单实现，基于清单6.2中队列接口的缩减版本。因为此队列只支持单线程使用，因此只需要一个<code class="calibre10">try_pop()</code>
+ 函数，而没有<code class="calibre10">wait_and_pop()</code>
+ 。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.4　一种简单的单线程队列实现</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\158.tif" src="Image00151.gif" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="..\tu\159.tif" src="Image00152.gif" class="calibre15"/>
+</p>
+<p class="zw">首先，要注意清单6.4使用了<code class="calibre10">std::unique_ptr&lt;node&gt;</code>
+ 来管理结点，因为这可以保证当结点不再需要时，它们（以及它们指向的数据）能被删除，而无需显式地编写<code class="calibre10">delete</code>
+ 。所有者链表从<code class="calibre10">head</code>
+ 开始管理，指向最后一个结点的<code class="calibre10">tail</code>
+ 是个裸指针。</p>
+<p class="zw">尽管在单线程环境中这种实现方式可以良好地工作，但是如果在多线程环境下试图使用细粒度锁，就会带来问题。假定有两个数据项（<code class="calibre10">head</code>
+ ❶和<code class="calibre10">tail</code>
+ ❷），原则上可以使用两个互斥元，一个用来保护<code class="calibre10">head</code>
+ ，另一个用来保护<code class="calibre10">tail</code>
+ ，但是这样会存在一些问题。</p>
+<p class="zw">最明显的问题就是，<code class="calibre10">push()</code>
+ 可以修改<code class="calibre10">head</code>
+ ❺和<code class="calibre10">tail</code>
+ ❻，因此它就需要锁住这两个互斥元。虽然倒霉，但也不是什么大问题，因为锁住两个互斥元是可能的。关键的问题是，<code class="calibre10">push()</code>
+ 和<code class="calibre10">pop()</code>
+ 都要访问某个结点的<code class="calibre10">next</code>
+ 指针。<code class="calibre10">push()</code>
+ 更新<code class="calibre10">tail-&gt;next</code>
+ ❹，<code class="calibre10">try_pop()</code>
+ 读取<code class="calibre10">head-&gt;next</code>
+ ❸。如果队列中只有一个结点，那么<code class="calibre10">head==tail</code>
+ ，即<code class="calibre10">head-&gt;next</code>
+ 和<code class="calibre10">tail-&gt;next</code>
+ 是同一个的对象，因而需要保护。因为还没读取<code class="calibre10">head</code>
+ 和<code class="calibre10">tail</code>
+ 时，你无法分辨它们是否为同一个对象，你就必须在<code class="calibre10">push()</code>
+ 和<code class="calibre10">try_pop()</code>
+ 中锁定同一个互斥元，所以没有比以前做得更好。有没有办法摆脱这一困境呢？</p>
+<h4 class="sigil_not_in_toc">1．通过分离数据允许并发</h4>
+<p class="zw">可以通过预先分配一个不存储数据的傀儡结点，以保证了队列中总是至少会有一个结点，将在头尾的两个访问分开，来解决这个问题。对于一个空队列，<code class="calibre10">head</code>
+ 和<code class="calibre10">tail</code>
+ 都指向这个傀儡结点，而不是<code class="calibre10">NULL</code>
+ 。这样就没问题了，因为如果当队列为空，<code class="calibre10">try_pop()</code>
+ 不会访问<code class="calibre10">head-&gt;next</code>
+ 。当你将一个结点加入队列（于是就有一个真正的结点），<code class="calibre10">head</code>
+ 和<code class="calibre10">tail</code>
+ 就指向不同的结点，因此在<code class="calibre10">head-&gt;next</code>
+ 和<code class="calibre10">tail-&gt;next</code>
+ 上就不存在竞争。缺点是，必须添加一个额外的间接层，通过指针存储数据，以便允许假结点。清单6.5展示该实现现在的样子。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.5　使用傀儡结点的简单队列</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\160.tif" src="Image00153.gif" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="..\tu\161a.tif" src="Image00154.gif" class="calibre15"/>
+</p>
+<p class="zw">对<code class="calibre10">try_pop()</code>
+ 的改变是很小的。首先，是比较<code class="calibre10">head</code>
+ 与<code class="calibre10">tail</code>
+ ❸，而不是检查其是否为<code class="calibre10">NULL</code>
+ ，因为傀儡结点意味着<code class="calibre10">head</code>
+ 不可能是<code class="calibre10">NULL</code>
+ 。因为<code class="calibre10">head</code>
+ 是一个<code class="calibre10">std::unique_ptr&lt;node&gt;</code>
+ ，你需要调用<code class="calibre10">head.get()</code>
+ 来进行比较。其次，因为<code class="calibre10">node</code>
+ 现在是通过指针来存储数据的❶，所以可以直接获取指针❹而不必构造<code class="calibre10">T</code>
+ 的一个新实例。最大改变是在<code class="calibre10">push()</code>
+ 中，必须在堆上创建<code class="calibre10">T</code>
+ 的一个新实例，并且在<code class="calibre10">std::shared_ptr&lt;&gt;</code>
+ ❼中取得其所有权（使用<code class="calibre10">std::make_shared</code>
+ 是为了避免第二次为引用计数分配内存的开销）。你创建的新结点将会作为新的傀儡结点，因此无需向构造函数提供<code class="calibre10">new_value</code>
+ ❽。取而代之的是，将旧的傀儡结点上的数据设置为新分配的<code class="calibre10">new_value</code>
+ 的副本❾。最后，为了得到一个傀儡结点，你必须在构造函数中创建它❷。</p>
+<p class="zw">到目前为止，我敢肯定你想知道这些变化为你带来了什么，并如何让队列变得线程安全。好吧，<code class="calibre10">push()</code>
+ 现在只访问<code class="calibre10">tail</code>
+ ，不访问<code class="calibre10">head</code>
+ ，这是一个改进。<code class="calibre10">try_pop()</code>
+ 既访问<code class="calibre10">head</code>
+ 又访问<code class="calibre10">tail</code>
+ ，但只要在最初的比较中需要<code class="calibre10">tail</code>
+ ，因此这个锁是很短暂的。最大的收获就是，傀儡结点意味着<code class="calibre10">try_pop()</code>
+ 和<code class="calibre10">push()</code>
+ 不会在同一个结点上进行操作，因此不再需要一个包含一切的互斥元。因此，你可以为<code class="calibre10">head</code>
+ 和<code class="calibre10">tail</code>
+ 各设置一个互斥元。那锁应该放在哪呢？</p>
+<p class="zw">我们的目标是实现最大程度的并发，因此希望持有锁的时间尽可能的短。<code class="calibre10">push()</code>
+ 比较简单：互斥元在访问<code class="calibre10">tail</code>
+ 的全程都需要被锁定，这意味着应该在新节点被分配好之后❽以及为当前的尾结点分配数据之前❾，锁定互斥元。该锁定需要一直持有到函数结束。</p>
+<p class="zw">
+<code class="calibre10">try_pop()</code>
+ 就没那么简单了。首先，你需要锁定<code class="calibre10">head</code>
+ 上的互斥元，并持有它直到<code class="calibre10">head</code>
+ 使用完毕。本质上，正是这个互斥元决定了哪个线程进行<code class="calibre10">pop</code>
+ 操作。一旦<code class="calibre10">head</code>
+ 改变❺，你就可以解锁该互斥元；在返回结果的时候❻，无需锁定它。剩下对<code class="calibre10">tail</code>
+ 的访问，需要锁定尾互斥元。因为只需要访问<code class="calibre10">tail</code>
+ 一次，所以可以只在进行读取的时候获取该互斥元。最好在将其封装在函数内部来实现。实际上，因为需要锁定<code class="calibre10">head</code>
+ 互斥元的代码只是该成员的子集，所以将其封装在函数里会更清晰。最终的代码如清单6.6所示。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.6　使用细粒度锁的线程安全队列</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\161b.tif" src="Image00155.gif" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="..\tu\162.tif" src="Image00156.gif" class="calibre15"/>
+</p>
+<p class="zw">让我们用批判的眼光来分析这段代码，思考6.1.1节中列出的准则。在寻找被破坏的不变量前，你应该确定它们到底是什么。</p>
+<ul class="calibre13">
+<li class="di_1ji_wu_xu_lie_biao">
+<code class="calibre10">tail-&gt;next==nullptr</code>
+ 。</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<code class="calibre10">tail-&gt;data==nullptr</code>
+ 。</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<code class="calibre10">head==tail</code>
+ <span class="calibre18">表明这是一个空链表。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">只有一个元素的链表必须满足</span>
+ <code class="calibre10">head-&gt;next==tail</code>
+ 。</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">对于链表中的每一个结点<code class="calibre10">x</code>
+ ，当<code class="calibre10">x!=tail</code>
+ 时，<code class="calibre10">x-&gt;data</code>
+ 指向<code class="calibre10">T</code>
+ 的一个实例，并且<code class="calibre10">x-&gt;next</code>
+ 指向链表中的下一个结点。<code class="calibre10">x-&gt;next==tail</code>
+ 表明<code class="calibre10">x</code>
+ 是链表中的最后一个结点。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">从<code class="calibre10">head</code>
+ 开始，沿着<code class="calibre10">next</code>
+ 结点会最终迭代到<code class="calibre10">tail</code>
+ 。</span>
+</li>
+</ul>
+<p class="zw">就其本身而言，<code class="calibre10">push()</code>
+ 是直观的：对数据结构所做的唯一更改受到<code class="calibre10">tail_mutex</code>
+ 的保护，并且它们维持了不变量，因为新的尾结点是一个空结点，并且<code class="calibre10">data</code>
+ 和<code class="calibre10">next</code>
+ 已经正确设置给旧的尾结点了，而旧的尾结点成为了链表中最后一个真正的结点。</p>
+<p class="zw">
+<code class="calibre10">try_pop()</code>
+ 这一部分很有趣。结果证明了不仅<code class="calibre10">tail_mutex</code>
+ 上的锁对于保护<code class="calibre10">tail</code>
+ 本身的读取是必要的，而且确保从头结点读取数据不会产生数据竞争也是很必要的。如果没有这个互斥元，就有可能出现一个线程调用<code class="calibre10">try_pop()</code>
+ 的同时，另一个线程调用<code class="calibre10">push()</code>
+ ，而且它们的操作并没有确定的顺序。尽管每个成员函数在互斥元上都持有一个锁，但它们锁定的是<strong class="calibre3">不同的</strong>
+ 互斥元，并且可能访问相同的数据。毕竟，队列中的所有数据都起源于对<code class="calibre10">push()</code>
+ 的调用。因为线程都可能会访问同一个数据而没有确定的顺序，就有可能导致数据竞争和未定义的行为，正如你在第5章中看到的那样。幸亏在<code class="calibre10">get_tail()</code>
+ 中对<code class="calibre10">tail_mutex</code>
+ 的锁定解决了一切问题。因为调用<code class="calibre10">get_tail()</code>
+ 与调用<code class="calibre10">push()</code>
+ 锁定了相同的互斥元，在这两次调用之间就有了确定的顺序。要么调用<code class="calibre10">get_tail()</code>
+ 发生在调用<code class="calibre10">push()</code>
+ 之前，这种情况下<code class="calibre10">get_tail()</code>
+ 看到的是<code class="calibre10">tail</code>
+ 的旧值。要么调用<code class="calibre10">get_tail()</code>
+ 发生在调用<code class="calibre10">push()</code>
+ 之后，这种情况下<code class="calibre10">get_tail()</code>
+ 看到的是<code class="calibre10">tail</code>
+ 的新值，<strong class="calibre3">并且新的数据附在了</strong>
+ <code class="calibre10">tail</code>
+ <strong class="calibre3">之前的值上</strong>
+ 。</p>
+<p class="zw">在锁定<code class="calibre10">head_mutex</code>
+ 的情况下调用<code class="calibre10">get_tail()</code>
+ 也是很重要的。如果不这么做，对<code class="calibre10">pop_head()</code>
+ 的调用可能会被阻塞在调用<code class="calibre10">get_tail()</code>
+ 和锁定<code class="calibre10">head_mutex</code>
+ 之间，因为可能有别的线程调用<code class="calibre10">try_pop()</code>
+ （接下来就是<code class="calibre10">pop_head()</code>
+ ），并且先获得了锁，从而阻止刚开始的线程继续执行下去。</p>
+<p class="calibre16"><img alt="图像说明文字" src="Image00157.jpg" class="calibre15"/>
+</p>
+<p class="zw">在这种<strong class="calibre3">损坏</strong>
+ 的情况下，对<code class="calibre10">get_tail()</code>
+ 的调用❶是在锁的范围之外做出的，你可能会发现在你的初始线程能够获取<code class="calibre10">head_mutex</code>
+ 上的锁的时候，<code class="calibre10">head</code>
+ 和<code class="calibre10">tail</code>
+ 都已经发生了变化，并且不仅返回的尾结点不仅仅不再是尾部，甚至都不再是链表的一部分了。这有可能意味着即使<code class="calibre10">head</code>
+ 真的是最后一个结点，<code class="calibre10">head</code>
+ 和<code class="calibre10">old_tail</code>
+ 的比较❷也会失败。因此，当更新<code class="calibre10">head</code>
+ ❸的时候，你可能将<code class="calibre10">head</code>
+ 移动到<code class="calibre10">tail</code>
+ 之前，超过链表的结尾，破坏数据结构。在清单6.6的正确实现中，始终保持在<code class="calibre10">head_mutex()</code>
+ 上的锁的范围内调用<code class="calibre10">get_tail()</code>
+ 。这就确保没有别的线程可以改变<code class="calibre10">head</code>
+ ，并且<code class="calibre10">tail</code>
+ 只会移得更远（随着调用<code class="calibre10">push()</code>
+ 加入新的结点），因此是百分百安全的。<code class="calibre10">head</code>
+ 永远都不会越过<code class="calibre10">get_tail()</code>
+ 返回的值，因而保持了不变量。</p>
+<p class="zw">一旦<code class="calibre10">pop_head()</code>
+ 通过更新<code class="calibre10">head</code>
+ ，将结点从队列中删除，互斥元就解锁了，并且<code class="calibre10">try_pop()</code>
+ 就可以提取数据并在有结点的时候将其删除（如果没有，就返回一个<code class="calibre10">std::shared_ptr&lt;&gt;</code>
+ 的<code class="calibre10">NULL</code>
+ 实例），按理说它就是能够访问该结点的唯一线程。</p>
+<p class="zw">接下来，外部接口是清单6.2中的程序的一个子集，因此同样可以分析得到：接口中不存在固有的竞争条件。</p>
+<p class="zw">异常就更有趣了。因为改变了数据分配模式，因此很多地方都可能产生异常。<code class="calibre10">try_pop()</code>
+ 的操作中只有锁定互斥元才能引发异常，并且直到它获取锁之后才会修改数据。因此<code class="calibre10">try_pop()</code>
+ 是异常安全的。另一方面，<code class="calibre10">push()</code>
+ 在堆上分配一个<code class="calibre10">T</code>
+ 的实例以及一个新的结点实例，而这两者都可能会引发异常。不管怎样，这两个新分配的对象都赋值给智能指针，因此当引发异常时它们就会被释放。一旦获取了锁，<code class="calibre10">push()</code>
+ 中的其他操作都不会引发异常，所以你再次稳操胜券，<code class="calibre10">push()</code>
+ 也是异常安全的。</p>
+<p class="zw">因为没有改变接口，所以没有新的死锁的外部机会。同样也没有内部机会，只有在<code class="calibre10">pop_head()</code>
+ 中才会获取两个锁，它总是先获取<code class="calibre10">head_mutex</code>
+ ，然后再获取<code class="calibre10">tail_mutex</code>
+ ，所以也不会死锁。</p>
+<p class="zw">剩下的问题就是关于并发的实际可能性。这种数据结构实际上具有比清单6.2中数据结构相当多的并发范围，因为这些锁是更细粒度的，并且<strong class="calibre3">在锁外部完成的更多</strong>
+ 。例如，在<code class="calibre10">push()</code>
+ 中，分配新结点和新数据项的是无需持有锁的。这就意味着多个线程可以并发地分配新节点和新数据项而不会出现问题。每次只有一个线程可以在链表中插入新结点，并且此操作仅仅是通过一些简单的指针赋值来实现的，所以与所有内存分配操作都在<code class="calibre10">std::queue&lt;&gt;</code>
+ 内部的、基于<code class="calibre10">std::queue&lt;&gt;</code>
+ 的实现相比，它持有锁的时间根本就不算多。</p>
+<p class="zw">同样，<code class="calibre10">try_pop()</code>
+ 持有<code class="calibre10">tail_mutex</code>
+ 的时间也很短，以保护<code class="calibre10">tail</code>
+ 的读取。因此，几乎整个对<code class="calibre10">try_pop()</code>
+ 的调用可以与<code class="calibre10">push()</code>
+ 的调用同时发生。同样，当持有<code class="calibre10">head_mutex</code>
+ 的时候所执行的操作是很少的，昂贵的<code class="calibre10">delete</code>
+ 操作（在结点指针的析构函数中）在锁的外面。这就增加了同时发生的调用<code class="calibre10">try_pop()</code>
+ 的数量。一次只有一个结点可以调用<code class="calibre10">pop_head()</code>
+ ，但是多个线程可以删除旧结点并且安全地返回数据。</p>
+<h4 class="sigil_not_in_toc">2．等待一个数据项pop</h4>
+<p class="zw">清单6.6提供了一个使用细粒度锁的线程安全队列，但它只支持<code class="calibre10">try_pop()</code>
+ （并且只有一种重载）。前面清单6.2中的有用的<code class="calibre10">wait_and_pop()</code>
+ 函数呢？能否用细粒度锁实现相同的接口呢？</p>
+<p class="zw">当然，回答是肯定的，但真正的问题是，怎么做？修改<code class="calibre10">push()</code>
+ 是很简单的，只需要在函数的尾部添加<code class="calibre10">data_cond.notify_one()</code>
+ 调用即可，就如同在清单6.2中一样。实际上，这并非那么简单，使用细粒度锁是为了实现并发量的最大化。如果在对<code class="calibre10">notify_one()</code>
+ 的调用中保留互斥元被锁定（如同清单6.2），那么如果被通知的线程在互斥元解锁之前被唤醒，它就得等待互斥元。另一方面，假设在调用<code class="calibre10">notify_one()</code>
+ <strong class="calibre3">之前</strong>
+ 就解锁互斥元，那么当等待中的线程被唤醒时，此互斥元就可以被它使用（假设没有别的线程先锁定它）。这是一个小小的改进，但某些情况下可能是很重要的。</p>
+<p class="zw">
+<code class="calibre10">wait_and_pop()</code>
+ 更复杂一些，因为得决定在哪里等待，断言是什么，以及需要锁定哪个互斥元。你所等待的条件是“队列非空”，它是用<code class="calibre10">head!=tail</code>
+ 表示的。如上所示，这有可能要求<code class="calibre10">head_mutex</code>
+ 和<code class="calibre10">tail_mutex</code>
+ 都被锁定，但是在清单6.6中，你已经决定只需要在读取<code class="calibre10">tail</code>
+ 的时候锁住<code class="calibre10">tail_mutex</code>
+ ，比较本身是不需要的，因此可以将相同的逻辑应用到此处。如果将断言设定为<code class="calibre10">head!=get_tail()</code>
+ ，就只需要持有<code class="calibre10">head_mutex</code>
+ ，因此在调用<code class="calibre10">data_cond.wait()</code>
+ 时可以使用<code class="calibre10">head_mutex</code>
+ 上的锁。一旦增加了等待逻辑，这种实现就跟<code class="calibre10">try_pop()</code>
+ 一样了。</p>
+<p class="zw">
+<code class="calibre10">try_pop()</code>
+ 的第二个重载以及相对应的<code class="calibre10">wait_and_pop()</code>
+ 重载就需要仔细思考一下。如果只是将从<code class="calibre10">old_head</code>
+ 获取到的<code class="calibre10">std::shared_ptr&lt;&gt;</code>
+ 替换为向<code class="calibre10">value</code>
+ 参数拷贝赋值，就可能存在异常安全问题。此刻，数据项已经从队列中删除，且互斥元已解锁，剩下的就是向调用者返回数据。然而，如果拷贝赋值引发异常（这是很有可能发生的），数据项就会丢失，因为无法将其返回到队列中同样的位置。</p>
+<p class="zw">如果模板参数中使用的实际类型<code class="calibre10">T</code>
+ 具有不引发异常的移动赋值运算符，或是不引发异常的交换操作，就可以使用之，但是我们实际上更想要一个适用于所有类型<code class="calibre10">T</code>
+ 的通用解决方案。在这种情况下，就需要在结点从链表中删除前，将可能的异常引发移到锁的范围内。这就意味着，需要另外的<code class="calibre10">pop_head()</code>
+ 重载，在修改链表之前获取存储的值。</p>
+<p class="zw">相比之下，<code class="calibre10">empty()</code>
+ 就很平常了，只需要锁定<code class="calibre10">head_mutex</code>
+ 并检查<code class="calibre10">head==get_tail()</code>
+ （如清单6.10所示）。队列最终的代码如清单6.7、清单6.8、清单6.9和清单6.10所示。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.7　使用锁和等待的线程安全队列：内部与接口</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\166a.tif" src="Image00158.gif" class="calibre15"/>
+</p>
+<p class="zw">向队列中入队新结点是很直观的——其实现（如清单6.8所示）与之前展示的非常接近。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.8　使用锁和等待的线程安全队列：push新值</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\166b.tif" src="Image00159.gif" class="calibre15"/>
+</p>
+<p class="zw">就像一直提到的那样，复杂性都在<strong class="calibre3">pop</strong>
+ 端，要利用一系列的辅助函数来简化问题。清单6.9展示了<code class="calibre10">wait_and_pop()</code>
+ 是如何实现的以及相关的辅助函数。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.9　使用锁和等待的线程安全队列：wait_and_pop()</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\167.tif" src="Image00160.gif" class="calibre15"/>
+</p>
+<p class="zw">清单6.9所示的<code class="calibre10">pop</code>
+ 端实现具有一些辅助函数来简化代码和去重，例如<code class="calibre10">pop_head()</code>
+ ❶与<code class="calibre10">wait_for_data()</code>
+ ❷。相对应地，它们修改链表以删除首项，并且等待队列中有数据要pop。<code class="calibre10">wait_for_data()</code>
+ 特别值得一提，因为它不仅使用一个lambda函数作为断言来等待条件变量，而且它向调用者返回锁的实例❸。这是为了确保当数据被相关的<code class="calibre10">wait_pop_head()</code>
+ 重载❹、❺修改时，持有相同的锁。在清单6.10中列出的<code class="calibre10">try_pop()</code>
+ 代码中也复用了<code class="calibre10">pop_head()</code>
+ 。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.10　使用锁和等待的线程安全队列：try_pop()和empty()</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\168.tif" src="Image00161.gif" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="..\tu\169.tif" src="Image00162.gif" class="calibre15"/>
+</p>
+<p class="zw">这种队列的实现将会作为第7章中提到的无锁队列的基础。这是一个<strong class="calibre3">无界</strong>
+ 队列。只要还有可用的内存，即使没有值被删除，线程也可以一直往队列中push新的值。与无界队列相对的是<strong class="calibre3">有界</strong>
+ 队列，当队列被创建的时候，它的最大长度也已经定下来了。一旦一个有界队列已满，再试图往队列中push更多的元素就会失败或者阻塞，直到有元素从队列中pop出，以腾出空间。有界队列对那些基于待执行的任务在线程间划分工作，要确保均匀铺开工作的时候，是很有用的（参见第8章）。这可以阻止线程过快填充队列，以至于远远超过从队列中读取数据的线程。</p>
+<p class="zw">这里展示的无界队列的实现可以通过在<code class="calibre10">push()</code>
+ 中等待条件变量，很容易地扩展为限制长度的队列。不同于等待队列中有数据项（例如在<code class="calibre10">pop()</code>
+ 中所做的），你需要等待队列中的项目数量低于最大值。对有界队列的进一步讨论超出了本书的范围。现在，让我们越过队列，来看一看更复杂的数据结构。</p>
+<h2 id="nav_point_108" class="calibre11">6.3　设计更复杂的基于锁的数据结构</h2>
+<p class="zw">栈和队列是很简单的，它们的接口极其有限，并且紧紧关注特定的目的。并非所有的数据结构都是那么简单的，大部分数据结构支持各种操作。原则上，这可能导致更多的并发机会，但因为需要考虑多种访问模式，使得保护数据的任务变得更加困难。当为并发访问设计数据结构时，能够执行的各种操作的精确特性是很重要的。</p>
+<p class="zw">为了研究所涉及到的问题，我们先来看看查找表的设计。</p>
+<h3 id="nav_point_109" class="calibre14">6.3.1　编写一个使用锁的线程安全查找表</h3>
+<p class="zw">查找表或字典将一种类型（键类型）的值与另外一种相同或不同类型（映射类型）的值联系起来。一般来说，这种数据结构的目的是使代码可以用一个给定的键值来查询相关的数据。在C++标准库中，是通过使用关联容器来实现这种功能的，例如，<code class="calibre10">std::map&lt;&gt;</code>
+ 、<code class="calibre10">std::multimap&lt;&gt;</code>
+ 、<code class="calibre10">std::unordered<em class="calibre9">map&lt;&gt;</em>
+</code>
+ 以及<code class="calibre10">std::unordered multimap&lt;&gt;</code>
+ 。</p>
+<p class="zw">查找表的使用模式与栈和队列都不同。栈和队列上的每个操作都会在一定程度上对它有所修改，要么添加一个元素要么删除一个元素，而查找表则很少会被修改。清单3.13中的简单DNS缓存就是这种情形的一个例子，与<code class="calibre10">std::map&lt;&gt;</code>
+ 相比，它的接口极大地简化了。如你在栈和队列中看到的，当从多个线程并发访问数据结构时，标准容器的接口并不合适，因为在接口设计中存在固有的竞争条件，所以它们需要被削减并修订。</p>
+<p class="zw">从并发的角度来说，<code class="calibre10">std::map&lt;&gt;</code>
+ 接口的最大问题就是迭代器。尽管当别的线程访问（以及修改）容器时，拥有一个能够安全访问容器的迭代器也是有可能的，但这很棘手。正确把握迭代器要求你去处理以下的问题，例如另一个线程正在删除迭代器引用的元素，这很麻烦。作为线程安全查找表要砍掉的第一个接口，你应跳过迭代器。<code class="calibre10">std::map&lt;&gt;</code>
+ （以及标准库中其他的关联容器）的接口在很大程度上基于迭代器，所以将它们踢到一边并且重新开始设计接口可能是值得的。</p>
+<p class="zw">查找表只有一些的基本操作。</p>
+<ul class="calibre13">
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">添加新的键/值对。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">改变与给定的键相关联的值。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">删除键及其关联的值。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">获得与给定键相关联的值，如果有的话。</span>
+</li>
+</ul>
+<p class="zw">还有一些容器范围的操作也是有用的，例如检查容器是否为空，键的完整列表的快照，或是键/值对的完整集合的快照。</p>
+<p class="zw">如果坚持简单的线程安全准则，例如不返回引用，以及在每个成员函数上都有一个互斥元，那么这些操作都是安全的。它们要么出现在其他线程的某个修改之前，要么在之后。最有可能产生竞争条件的，是在添加一个新的键/值对的时候。如果两个线程添加一个新值，只有一个线程会胜出，第二个会因此而失败。一种可能的方法将添加和改变操作整合进单个成员函数中，就像你为清单3.13中的DNS缓存所做的那样。</p>
+<p class="zw">从接口的角度来看，有趣一点是获取相关联值时的“<strong class="calibre3">如果有</strong>
+ ”的部分。一种选择是当键不存在的情况下，允许用户提供一个“默认的”结果来返回。</p>
+<p class="calibre16"><img alt="..\tu\新建文件夹\170.tif" src="Image00163.gif" class="calibre15"/>
+</p>
+<p class="zw">在这种情况下，如果没有显式提供<code class="calibre10">default_value</code>
+ ，可以使用<code class="calibre10">mapped_type</code>
+ 的默认构造函数实例。这也可以扩展为返回一个<code class="calibre10">std::pair&lt;mapped_type,bool&gt;</code>
+ 类型的实例，而不只是<code class="calibre10">mapped_type</code>
+ 的实例，这里的<code class="calibre10">bool</code>
+ 指示值是否存在。另一种选择就是，返回一个引用该值的智能指针。如果指针的值为<code class="calibre10">NULL</code>
+ ，就是没有返回值。</p>
+<p class="zw">如上所述，一旦决定了接口，那么（假设没有接口竞争条件）可以通过在每个成员函数中使用一个互斥元和一个简单锁来保护下层的数据结构，以保证线程安全。然而，这会浪费通过独立的函数来读取数据结构并修改它所提供的并发可能性。一种方法是使用一个支持多个读线程或者一个写线程的互斥元，例如清单3.13中使用的<code class="calibre10">boost::shared_mutex</code>
+ 。尽管这种方法可以提高并发访问的可能性，但是每次只有一个线程能够修改数据结构。理想情况下，你会想要做得更好一些。</p>
+<h4 class="sigil_not_in_toc">设计一个细粒度锁的MAP数据结构</h4>
+<p class="zw">如同在6.2.3中提到的队列一样，为了允许细粒度锁，你需要仔细考虑数据结构的细节，而不是仅仅封装一个类似于<code class="calibre10">std::map&lt;&gt;</code>
+ 这样已存在容器。这里通常有三种常见的方法来实现一个类似于查找表的关联容器。</p>
+<ul class="calibre13">
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">二叉树，例如红黑树。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">已排序数组。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">哈希表。</span>
+</li>
+</ul>
+<p class="zw">二叉树不能为扩大并发机会提供太多的空间，每次查找或修改必须从访问根节点开始，因此根节点必须被锁定。尽管当线程沿着树往下移动的时候会释放这个锁，但是这也不比锁定整个数据结构好多少。</p>
+<p class="zw">已排序数组就更糟了，因为无法事先得知一个给定的数据在数组的哪个位置，所以就需要一次锁定整个数组。</p>
+<p class="zw">只剩下哈希表了。假设有一定数量的桶，一个键属于哪个桶完全取决于这个键及其哈希函数的特性。这就意味着可以安全地在每个桶上有一个独立的锁。如果再次使用支持多重读或单一写的互斥元，你就将并发机会增加了N重，这里的N是桶的数量。其缺点是为键找一个好的哈希函数。C++标准库提供了<code class="calibre10">std::hash&lt;&gt;</code>
+ 模板，可以用来实现这一目的。它已经为<code class="calibre10">int</code>
+ 等基本类型以及<code class="calibre10">std::string</code>
+ 这样的常见库类型进行了特化，而且使用者也可以轻易地为别的键类型将其进行特化。如果效仿标准的无序容器，以及在进行哈希计算时将函数对象类型作为模板参数，那么使用者可以选择是否为键类型特化<code class="calibre10">std::hash&lt;&gt;</code>
+ ，或是提供一个单独的哈希函数。</p>
+<p class="zw">那么，让我们来看清单6.11中的代码。一个线程安全查找表的实现将会是怎样的呢？这里列出了一种可能的实现。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.11　线程安全查找表</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\171.tif" src="Image00164.gif" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="..\tu\172.tif" src="Image00165.gif" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="..\tu\173.tif" src="Image00166.gif" class="calibre15"/>
+</p>
+<p class="zw">该实现使用<code class="calibre10">std::vector&lt;std::unique_ptr&lt;bucket_type&gt;&gt;</code>
+ ❻来持有桶，允许在构造函数中指定桶的数量。默认值是19，这是一个任意选择的质数。哈希表与质数数量的桶合作得最好。每个桶都被一个<code class="calibre10">boost::shared_mutex</code>
+ 的实例保护❶，使得<strong class="calibre3">每个桶</strong>
+ 都可以允许很多个并发读或者单个调用其中一个修改函数。</p>
+<p class="zw">因为桶的数量是固定的，所以在调用<code class="calibre10">get_bucket()</code>
+ 函数❼时无需锁定❽、❾、❿，而且桶互斥元随后可以被锁定为共享（只读）所有权❸，或是独占（读/写）所有权❹、❺，对每个函数都是适用的。</p>
+<p class="zw">这三个函数都使用桶上的<code class="calibre10">find_entry_for()</code>
+ 成员函数❷来确定在桶上是否有入口。每个桶包含一个键/值对的<code class="calibre10">std::list&lt;&gt;</code>
+ ，因此添加和删除项目是很简单的。</p>
+<p class="zw">我还关注了并发的角度，所有的东西都被互斥元锁合适地保护着，那么异常安全呢？<code class="calibre10">value_for</code>
+ 并不修改任何东西，所以没关系；如果它引发异常，也不会影响数据结构。<code class="calibre10">remove_mapping</code>
+ 调用<code class="calibre10">erase</code>
+ 的时候会修改列表，但是保证不会引发异常，因此是安全的。只有<code class="calibre10">add_or_update_mappin</code>
+ g在<code class="calibre10">if</code>
+ 的两个分支上可能会引发异常。<code class="calibre10">push_back</code>
+ 是异常安全的，当它引发异常时，会将列表留在原始状态，因此这个分支是没问题的。在这种情况下，唯一的问题就是当替换一个现存值时所做的赋值，如果此赋值引发异常，那么就得指望它不要修改原始值。然而，这在整体上并不影响数据结构，而且完全是用户提供类型的属性，因此可以安全地把它留给用户来处理。</p>
+<p class="zw">在本节的开头，我提到这种查找表的一个不错的功能，就是可以获取到当前状态的快照的选项，比如<code class="calibre10">std::map&lt;&gt;</code>
+ 。为了确保能够得到该状态的一致的副本，就需要锁定整个容器，也就是需要锁定所有的桶。因为查找表中“普通的”操作一次只需要锁定一个桶，这就会是唯一一个需要锁定所有桶的操作。因此，只要每次按照相同的顺序（例如，递增桶的索引）来锁定桶，就不会有死锁的机会。清单6.12给出了一个实现。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.12　获取threadsafe_lookup_table的内容作为一个std::map&lt;&gt;</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\174.tif" src="Image00167.gif" class="calibre15"/>
+</p>
+<p class="zw">清单6.11中查找表实现通过单独锁定每个桶以及使用一个<code class="calibre10">boost::shared_mutex</code>
+ 实例来允许基于每个桶的并发读取，这就从总体上增加了查找表的并发机会。但是如果要通过更细粒度的锁来增加并发的潜力呢？在下一节，将通过使用具有迭代器支持的线程安全链表容器来实现。</p>
+<h3 id="nav_point_110" class="calibre14">6.3.2　编写一个使用锁的线程安全链表</h3>
+<p class="zw">链表是一种最基本的数据结构，因此它应该能被直接写成线程安全的，不是吗？那么，这取决于你追求什么样的功能，并且需要提供迭代器支持，这是我一直避免将其加入到你的基础图中的东西，因为它太复杂了。STL风格的迭代器支持，指的是迭代器必须持有某种对容器内部数据结构的引用。如果容器可以被另一个线程修改，这个引用必须仍然有效，这就从根本上要求迭代器在部分数据结构上持有锁。考虑到STL风格的迭代器的生存期是完全不受容器控制的，这就不是个好主意。</p>
+<p class="zw">另一种方式是提供类似于<code class="calibre10">for_each</code>
+ 这样的迭代函数作为容器本身的一部分。这就让容器完全负责迭代器和锁，但是这与第3章中提到的避免死锁原则是冲突的。为了使得<code class="calibre10">for_each</code>
+ 做一些有用的操作，它就必须在持有内部锁的时候调用用户提供的代码。不仅如此，为了使用户提供的代码能够作用于数据项，它必须将对每个数据项的引用传递给用户提供的代码。你可以通过向用户提供的代码传递每个数据项的副本来避免这一点，但是当数据项很大时，这种方式就很耗费资源。</p>
+<p class="zw">因此，目前我们把它留给用户，让他们确保不会在用户提供的操作中因获取锁而导致死锁，并且通过在锁外的访问中存储引用以避免导致数据竞争。就查找表所使用的链表来说，它是完全安全的，因为不会做任何不恰当的操作。</p>
+<p class="zw">留给你的问题是，要为链表提供哪些操作。如果回顾一下清单6.11以及6.12，就可以知道需要下列操作。</p>
+<ul class="calibre13">
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">向链表添加新项目。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">从链表中删除满足一定条件的项目。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">在链表中查找满足一定条件的项目。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">更新满足一定条件的项目。</span>
+</li>
+<li class="di_1ji_wu_xu_lie_biao">
+<span class="calibre18">复制链表中每个项目到另一个容器中。</span>
+</li>
+</ul>
+<p class="zw">为了令其成为良好的通用链表容器，添加进一步的操作例如在指定位置插入是很有用的，但是对于查找表是不需要的，因此我将它留给读者作为练习。</p>
+<p class="zw">在链表中使用细粒度锁的基本思想是每个结点使用一个互斥元。如果链表很大，就会有很多互斥元！其好处就是在链表不同部分的操作是真正并发的。每个操作仅在其真正关注的结点上持有锁，并且当它移动到下一个结点时，会解锁每个结点。清单6.13给出了正是这样一个链表的实现。</p>
+<p class="calibre17">
+<strong class="calibre3">清单6.13　支持迭代的线程安全链表</strong>
+</p>
+<p class="calibre16"><img alt="..\tu\176.tif" src="Image00168.gif" class="calibre15"/>
+</p>
+<p class="calibre16"><img alt="..\tu\177.tif" src="Image00169.gif" class="calibre15"/>
+</p>
+<p class="zw">清单6.13中的<code class="calibre10">threadsafe_list&lt;&gt;</code>
+ 是一个单链表，每个入口是一个<code class="calibre10">node</code>
+ 结构体➊。默认构造的<code class="calibre10">node</code>
+ 是链表的<code class="calibre10">head</code>
+ ，开始时它的<code class="calibre10">next</code>
+ 指针为<code class="calibre10">NULL</code>
+ ➋。新结点是通过<code class="calibre10">push_front()</code>
+ 函数增加的，首先构造一个新结点➍，在堆上分配存储的数据➌，保留<code class="calibre10">next</code>
+ 指针为<code class="calibre10">NULL</code>
+ 。然后你需要为<code class="calibre10">head</code>
+ 结点获取互斥元上的锁来得到正确的<code class="calibre10">next</code>
+ 值➎，并且通过将<code class="calibre10">head.next</code>
+ 设置为指向新结点来实现将这个结点插入链表前方➏。到目前为止，一切都还不错，你只需要锁住一个互斥元来将新项目插入链表，因此没有死锁的风险。同样，缓慢的内存分配发生在锁之外，因此锁只保护几个指针值的更新并且不会失败。下面是迭代函数。</p>
+<p class="zw">首先，我们来看看<code class="calibre10">for_each()</code>
+ ➐。这个操作用接受某种类型的<code class="calibre10">Function</code>
+ ，作用于表中的每一个元素；通常在大多数标准库中，它会通过值形式接受此函数，并且可以与真正的函数或者是具有函数调用操作符的某种类型的对象一起运作。在这种情况下，函数必须接受类型为<code class="calibre10">T</code>
+ 的值作为唯一的参数。这就是你进行交替锁定的地方。刚开始，你锁定<code class="calibre10">head</code>
+ 结点上的互斥元➑。然后就可以安全地获得指向<code class="calibre10">next</code>
+ 结点的指针（使用<code class="calibre10">get()</code>
+ 因为你并不打算获取该指针的所有权）。如果该指针不为<code class="calibre10">NULL</code>
+ ➒，就锁定那个结点上的互斥元➓来处理数据。一旦你锁定那个结点，就可以释放之前结点的锁⓫，并且调用指定的函数⓬。一旦函数完成，就可以更新<code class="calibre10">current</code>
+ 指针指向你刚刚处理的结点，并且将锁的拥有权从<code class="calibre10">next_lk</code>
+ 移动（<code class="calibre10">move</code>
+ ）到<code class="calibre10">lk</code>
+ ⓭。因为<code class="calibre10">for_each</code>
+ 将每个数据项直接传递给所提供的<code class="calibre10">Function</code>
+ ，如果需要的话，你可以使用它更新数据项或者将它们复制到另一个容器中，或其他任何事情。如果函数表现良好这就是安全的，因为拥有数据项的结点在整个调用中都持有互斥元。</p>
+<p class="zw">
+<code class="calibre10">find_first_if()</code>
+ ⓮与<code class="calibre10">for_each()</code>
+ 是类似的，最主要的不同之处在于提供的<code class="calibre10">Predicate</code>
+ 必须返回<code class="calibre10">true</code>
+ 来表明找到了匹配项或者<code class="calibre10">false</code>
+ 来表明没找到匹配项⓯。一旦你找到匹配项，你就返回找到的数据⓰而不是继续查找。你可以用<code class="calibre10">for_each()</code>
+ 来实现它，但是一旦找到匹配项就不需要继续处理链表中剩下的部分了。</p>
+<p class="zw">
+<code class="calibre10">remove_if()</code>
+ ⓱有些不同，因为这个函数必须真正地更新链表，你不能用<code class="calibre10">for_each()</code>
+ 来实现它。如果<code class="calibre10">Predicate</code>
+ 返回<code class="calibre10">true</code>
+ ⓲，你就通过更新<code class="calibre10">current-&gt;next</code>
+ ⓳将这个结点从链表中删除。一旦完成，就可以释放<code class="calibre10">next</code>
+ 结点互斥元所持有的锁。当你将它移入的<code class="calibre10">std::unique_ptr&lt;node&gt;</code>
+ 超出范围时，该结点就被删除了⓴。在这种情况下，你不用更新<code class="calibre10">current</code>
+ ，因为需要检查新的<code class="calibre10">next</code>
+ 结点。如果<code class="calibre10">Predicate</code>
+ 返回<code class="calibre10">false</code>
+ ，你就像以前一样处理<img alt="21" src="Image00170.jpg" width="10" class="calibre26"/>
+ 。</p>
+<p class="zw">那么，这些互斥元上存在着死锁或者竞争条件么？答案毫无疑问是<strong class="calibre3">否定</strong>
+ 的，前提是所提供的断言和函数是表现良好的。迭代总是按照同一方式，通常从<code class="calibre10">head</code>
+ 结点开始，并且总是在释放当前互斥元前就锁住下一个互斥元，因此不可能在不同的线程间有不同的锁顺序。唯一可能产生竞争条件的，就是在<code class="calibre10">remove_if()</code>
+ 中对待删除结点的删除，因为你会在解锁互斥元之后才这么做（销毁一个锁定的互斥元是未定义的行为）。然而，稍加思考就会知道这确实是安全的，因为你仍然持有之前结点（<code class="calibre10">current</code>
+ ）上的互斥元，因此没有新线程可以试图获取你要删除的结点上的锁。</p>
+<p class="zw">并发的机会又如何呢？这种细粒度锁的关键是在单个互斥元上提高并发的可能性，那么实现这一点了么？是的，已经实现了。不同的线程可以同时在链表的不同结点上工作，无论它们正在用<code class="calibre10">for_each()</code>
+ 处理每个数据项，还用<code class="calibre10">find_first_if()</code>
+ 搜索，还是用<code class="calibre10">remove_if()</code>
+ 来删除项目⓴。但是因为每个结点的互斥元轮流被锁定，线程不能互相超越。如果一个线程花了很长时间处理一个特定的结点，当别的线程到达此特定结点时就必须等待。</p>
+<h2 id="nav_point_111" class="calibre11">6.4　小结</h2>
+<p class="zw">本章开头考虑了为并发设计一个数据结构意味着什么，并且提供了一些准则来实现。然后我们完成一些通用的数据结构（栈、队列、哈希映射以及链表），考虑了如何在设计并发存取的时候应用这些准则来实现它们，使用锁来保护数据并阻止数据竞争。现在你可以考虑设计你自己的数据结构，观察哪里有并发的机会以及哪里可能会存在竞争条件。</p>
+<p class="zw">在第7章，我们将看一看完全避免锁的方法，使用底层原子操作来提供必要的顺序限制，并且遵循同样的准则。</p>
+<p class="zw"><br class="calibre7"/>
+</p>
+<div class="calibre5"></div>
+
+
+
+  </div>
+
+  
+  <div class="calibreToc">
+    <h2><a href="../../1w54d-4vylw.html">Table of contents
+</a></h2>
+    <div>
+  <ul>
+    <li>
+      <a href="text00002.html">版权信息</a>
+    </li>
+    <li>
+      <a href="text00003.html#nav_point_0">版权声明</a>
+    </li>
+    <li>
+      <a href="text00004.html#nav_point_1">内容提要</a>
+    </li>
+    <li>
+      <a href="text00005.html#nav_point_2">序</a>
+    </li>
+    <li>
+      <a href="text00006.html#nav_point_3">译者简介</a>
+    </li>
+    <li>
+      <a href="text00008.html#nav_point_4">致谢</a>
+    </li>
+    <li>
+      <a href="text00009.html#nav_point_5">前言</a>
+      <ul>
+        <li>
+          <a href="text00009.html#nav_point_6">路线图</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_7">谁应该阅读本书</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_8">如何使用本书</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_9">代码约定和下载</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_10">软件需求</a>
+        </li>
+        <li>
+          <a href="text00009.html#nav_point_11">作者在线</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00010.html#nav_point_12">资源</a>
+      <ul>
+        <li>
+          <a href="text00010.html#nav_point_13">印刷资源</a>
+        </li>
+        <li>
+          <a href="text00010.html#nav_point_14">在线资源</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00011.html#nav_point_15">简要目录</a>
+    </li>
+    <li>
+      <a href="text00012.html#nav_point_16">第1章 你好，C++并发世界</a>
+      <ul>
+        <li>
+          <a href="text00012.html#nav_point_17">1.1 什么是并发</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_18">1.1.1 计算机系统中的并发</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_19">1.1.2 并发的途径</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_20">1.2 为什么使用并发</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_21">1.2.1 为了划分关注点而使用并发</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_22">1.2.2 为了性能而使用并发</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_23">1.2.3 什么时候不使用并发</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_24">1.3 在C++中使用并发和多线程</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_25">1.3.1 C++多线程历程</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_26">1.3.2 新标准中的并发支持</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_27">1.3.3 C++线程库的效率</a>
+            </li>
+            <li>
+              <a href="text00012.html#nav_point_28">1.3.4 平台相关的工具</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_29">1.4 开始入门</a>
+          <ul>
+            <li>
+              <a href="text00012.html#nav_point_30">你好，并发世界</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00012.html#nav_point_31">1.5 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00013.html#nav_point_32">第2章 管理线程</a>
+      <ul>
+        <li>
+          <a href="text00013.html#nav_point_33">2.1 基本线程管理</a>
+          <ul>
+            <li>
+              <a href="text00013.html#nav_point_34">2.1.1 启动线程</a>
+            </li>
+            <li>
+              <a href="text00013.html#nav_point_35">2.1.2 等待线程完成</a>
+            </li>
+            <li>
+              <a href="text00013.html#nav_point_36">2.1.3 在异常环境下的等待</a>
+            </li>
+            <li>
+              <a href="text00013.html#nav_point_37">2.1.4 在后台运行线程</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_38">2.2 传递参数给线程函数</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_39">2.3 转移线程的所有权</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_40">2.4 在运行时选择线程数量</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_41">2.5 标识线程</a>
+        </li>
+        <li>
+          <a href="text00013.html#nav_point_42">2.6 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00014.html#nav_point_43">第3章 在线程间共享数据</a>
+      <ul>
+        <li>
+          <a href="text00014.html#nav_point_44">3.1 线程之间共享数据的问题</a>
+          <ul>
+            <li>
+              <a href="text00014.html#nav_point_45">3.1.1 竞争条件</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_46">3.1.2 避免有问题的竞争条件</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00014.html#nav_point_47">3.2 用互斥元保护共享数据</a>
+          <ul>
+            <li>
+              <a href="text00014.html#nav_point_48">3.2.1 使用C++中的互斥元</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_49">3.2.2 为保护共享数据精心组织代码</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_50">3.2.3 发现接口中固有的竞争条件</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_51">3.2.4 死锁：问题和解决方案</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_52">3.2.5 避免死锁的进一步指南</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_53">3.2.6 用std::unique_lock灵活锁定</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_54">3.2.7 在作用域之间转移锁的所有权</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_55">3.2.8 锁定在恰当的粒度</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00014.html#nav_point_56">3.3 用于共享数据保护的替代工具</a>
+          <ul>
+            <li>
+              <a href="text00014.html#nav_point_57">3.3.1 在初始化时保护共享数据</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_58">3.3.2 保护很少更新的数据结构</a>
+            </li>
+            <li>
+              <a href="text00014.html#nav_point_59">3.3.3 递归锁</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00014.html#nav_point_60">3.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00015.html#nav_point_61">第4章 同步并发操作</a>
+      <ul>
+        <li>
+          <a href="text00015.html#nav_point_62">4.1 等待事件或其他条件</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_63">4.1.1 用条件变量等待条件</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_64">4.1.2 使用条件变量建立一个线程安全队列</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_65">4.2 使用future等待一次性事件</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_66">4.2.1 从后台任务中返回值</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_67">4.2.2 将任务与future相关联</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_68">4.2.3 生成(std::)promise</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_69">4.2.4 为future保存异常</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_70">4.2.5 等待自多个线程</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_71">4.3 有时间限制的等待</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_72">4.3.1 时钟</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_73">4.3.2 时间段</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_74">4.3.3 时间点</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_75">4.3.4 接受超时的函数</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_76">4.4 使用操作同步来简化代码</a>
+          <ul>
+            <li>
+              <a href="text00015.html#nav_point_77">4.4.1 带有future的函数式编程</a>
+            </li>
+            <li>
+              <a href="text00015.html#nav_point_78">4.4.2 具有消息传递的同步操作</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00015.html#nav_point_79">4.5 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00016.html#nav_point_80">第5章 C++内存模型和原子类型上操作</a>
+      <ul>
+        <li>
+          <a href="text00016.html#nav_point_81">5.1 内存模型基础</a>
+          <ul>
+            <li>
+              <a href="text00016.html#nav_point_82">5.1.1 对象和内存位置</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_83">5.1.2 对象、内存位置以及并发</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_84">5.1.3 修改顺序</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00016.html#nav_point_85">5.2 C++中的原子操作及类型</a>
+          <ul>
+            <li>
+              <a href="text00016.html#nav_point_86">5.2.1 标准原子类型</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_87">5.2.2 std::atomic_flag上的操作</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_88">5.2.3 基于std::atomic&lt;bool&gt;的操作</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_89">5.2.4 std::atomic&lt;T*&gt;上的操作：指针算术运算</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_90">5.2.5 标准原子整型的操作</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_91">5.2.6 std::atomic&lt;&gt;初级类模板</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_92">5.2.7 原子操作的自由函数</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00016.html#nav_point_93">5.3 同步操作和强制顺序</a>
+          <ul>
+            <li>
+              <a href="text00016.html#nav_point_94">5.3.1 synchronizes-with关系</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_95">5.3.2 happens-before关系</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_96">5.3.3 原子操作的内存顺序</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_97">5.3.4 释放序列和synchronizes-with</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_98">5.3.5 屏障</a>
+            </li>
+            <li>
+              <a href="text00016.html#nav_point_99">5.3.6 用原子操作排序非原子操作</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00016.html#nav_point_100">5.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00017.html#nav_point_101">第6章 设计基于锁的并发数据结构</a>
+      <ul>
+        <li>
+          <a href="text00017.html#nav_point_102">6.1 为并发设计的含义是什么</a>
+          <ul>
+            <li>
+              <a href="text00017.html#nav_point_103">为并发设计数据结构的准则</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00017.html#nav_point_104">6.2 基于锁的并发数据结构</a>
+          <ul>
+            <li>
+              <a href="text00017.html#nav_point_105">6.2.1 使用锁的线程安全栈</a>
+            </li>
+            <li>
+              <a href="text00017.html#nav_point_106">6.2.2 使用锁和条件变量的线程安全队列</a>
+            </li>
+            <li>
+              <a href="text00017.html#nav_point_107">6.2.3 使用细粒度锁和条件变量的线程安全队列</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00017.html#nav_point_108">6.3 设计更复杂的基于锁的数据结构</a>
+          <ul>
+            <li>
+              <a href="text00017.html#nav_point_109">6.3.1 编写一个使用锁的线程安全查找表</a>
+            </li>
+            <li>
+              <a href="text00017.html#nav_point_110">6.3.2 编写一个使用锁的线程安全链表</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00017.html#nav_point_111">6.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00018.html#nav_point_112">第7章 设计无锁的并发数据结构</a>
+      <ul>
+        <li>
+          <a href="text00018.html#nav_point_113">7.1 定义和结果</a>
+          <ul>
+            <li>
+              <a href="text00018.html#nav_point_114">7.1.1 非阻塞数据结构的类型</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_115">7.1.2 无锁数据结构</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_116">7.1.3 无等待的数据结构</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_117">7.1.4 无锁数据结构的优点与缺点</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00018.html#nav_point_118">7.2 无锁数据结构的例子</a>
+          <ul>
+            <li>
+              <a href="text00018.html#nav_point_119">7.2.1 编写不用锁的线程安全栈</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_120">7.2.2 停止恼人的泄漏：在无锁数据结构中管理内存</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_121">7.2.3 用风险指针检测不能被回收的结点</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_122">7.2.4 使用引用计数检测结点</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_123">7.2.5 将内存模型应用至无锁栈</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_124">7.2.6 编写不用锁的线程安全队列</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00018.html#nav_point_125">7.3 编写无锁数据结构的准则</a>
+          <ul>
+            <li>
+              <a href="text00018.html#nav_point_126">7.3.1 准则：使用std::memory_order_seq_cst作为原型</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_127">7.3.2 准则：使用无锁内存回收模式</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_128">7.3.3 准则：当心ABA问题</a>
+            </li>
+            <li>
+              <a href="text00018.html#nav_point_129">7.3.4 准则：识别忙于等待的循环以及辅助其他线程</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00018.html#nav_point_130">7.4 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00019.html#nav_point_131">第8章 设计并发代码</a>
+      <ul>
+        <li>
+          <a href="text00019.html#nav_point_132">8.1 在线程间划分工作的技术</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_133">8.1.1 处理开始前在线程间划分数据</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_134">8.1.2 递归地划分数据</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_135">8.1.3 以任务类型划分工作</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_136">8.2 影响并发代码性能的因素</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_137">8.2.1 有多少个处理器？</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_138">8.2.2 数据竞争和乒乓缓存</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_139">8.2.3 假共享</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_140">8.2.4 数据应该多紧密</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_141">8.2.5 过度订阅和过多的任务切换</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_142">8.3 为多线程性能设计数据结构</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_143">8.3.1 为复杂操作划分数组元素</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_144">8.3.2 其他数据结构中的数据访问方式</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_145">8.4 为并发设计时的额外考虑</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_146">8.4.1 并行算法中的异常安全</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_147">8.4.2 可扩展性和阿姆达尔定律</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_148">8.4.3 用多线程隐藏延迟</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_149">8.4.4 用并发提高响应性</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_150">8.5 在实践中设计并发代码</a>
+          <ul>
+            <li>
+              <a href="text00019.html#nav_point_151">8.5.1 std::for_each的并行实现</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_152">8.5.2 std::find的并行实现</a>
+            </li>
+            <li>
+              <a href="text00019.html#nav_point_153">8.5.3 std::partial_sum的并行实现</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00019.html#nav_point_154">8.6 总结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00020.html#nav_point_155">第9章 高级线程管理</a>
+      <ul>
+        <li>
+          <a href="text00020.html#nav_point_156">9.1 线程池</a>
+          <ul>
+            <li>
+              <a href="text00020.html#nav_point_157">9.1.1 最简单的线程池</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_158">9.1.2 等待提交给线程池的任务</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_159">9.1.3 等待其他任务的任务</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_160">9.1.4 避免工作队列上的竞争</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_161">9.1.5 工作窃取</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00020.html#nav_point_162">9.2 中断线程</a>
+          <ul>
+            <li>
+              <a href="text00020.html#nav_point_163">9.2.1 启动和中断另一个线程</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_164">9.2.2 检测一个线程是否被中断</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_165">9.2.3 中断等待条件变量</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_166">9.2.4 中断在std::condition_variable_any上的等待</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_167">9.2.5 中断其他阻塞调用</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_168">9.2.6 处理中断</a>
+            </li>
+            <li>
+              <a href="text00020.html#nav_point_169">9.2.7 在应用退出时中断后台任务</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00020.html#nav_point_170">9.3 总结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00021.html#nav_point_171">第10章 多线程应用的测试与调试</a>
+      <ul>
+        <li>
+          <a href="text00021.html#nav_point_172">10.1 并发相关错误的类型</a>
+          <ul>
+            <li>
+              <a href="text00021.html#nav_point_173">10.1.1 不必要的阻塞</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_174">10.1.2 竞争条件</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00021.html#nav_point_175">10.2 定位并发相关的错误的技巧</a>
+          <ul>
+            <li>
+              <a href="text00021.html#nav_point_176">10.2.1 审阅代码以定位潜在的错误</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_177">10.2.2 通过测试定位并发相关的错误</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_178">10.2.3 可测试性设计</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_179">10.2.4 多线程测试技术</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_180">10.2.5 构建多线程的测试代码</a>
+            </li>
+            <li>
+              <a href="text00021.html#nav_point_181">10.2.6 测试多线程代码的性能</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00021.html#nav_point_182">10.3 总结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00022.html#nav_point_183">附录A C++11部分语言特性简明参考</a>
+      <ul>
+        <li>
+          <a href="text00022.html#nav_point_184">A.1 右值引用</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_185">A.1.1 移动语义</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_186">A.1.2 右值引用与函数模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_187">A.2 deleted函数</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_188">A.3 defaulted函数</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_189">A.4 constexpr函数</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_190">A.4.1 constexpr与用户定义类型</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_191">A.4.2 constexpr对象</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_192">A.4.3 constexpr函数要求</a>
+            </li>
+            <li>
+              <a href="text00022.html#nav_point_193">A.4.4 constexpr与模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_194">A.5 lambda函数</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_195">引用局部变量的lambda函数</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_196">A.6 变参模板</a>
+          <ul>
+            <li>
+              <a href="text00022.html#nav_point_197">展开参数包</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_198">A.7 自动推断变量的类型</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_199">A.8 线程局部变量</a>
+        </li>
+        <li>
+          <a href="text00022.html#nav_point_200">A.9 小结</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00023.html#nav_point_201">附录B 并发类库简要对比</a>
+    </li>
+    <li>
+      <a href="text00024.html#nav_point_202">附录C 消息传递框架与完整的ATM示例</a>
+    </li>
+    <li>
+      <a href="text00025.html#nav_point_203">附录D C++线程类库参考</a>
+      <ul>
+        <li>
+          <a href="text00025.html#nav_point_204">D.1 &lt;chrono&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_205">D.1.1 std::chrono::duration类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_206">D.1.2 std::chrono::time_point类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_207">D.1.3 std::chrono::system_clock类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_208">D.1.4 std::chrono::steady_clock类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_209">D.1.5 std::chrono::high_resolution_clock typedef</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_210">D.2 &lt;condition_variable&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_211">D.2.1 std::condition_variable类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_212">D.2.2 std::condition_variable_any类</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_213">D.3 &lt;atomic&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_214">D.3.1 std::atomic_xxx typedef</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_215">D.3.2 ATOMIC_xxx_LOCK_FREE宏</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_216">D.3.3 ATOMIC_VAR_INIT宏</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_217">D.3.4 std::memory_order枚举</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_218">D.3.5 std::atomic_thread_fence函数</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_219">D.3.6 std::atomic_signal_fence函数</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_220">D.3.7 std::atomic_flag类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_221">D.3.8 std::atomic类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_222">D.3.9 std::atomic模板的特化</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_223">D.3.10 std::atomic&lt;integral-type&gt;特化</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_224">D.3.11 std::atomic&lt;T*&gt;偏特化</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_225">D.4 &lt;future&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_226">D.4.1 std::future类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_227">D.4.2 std::shared_future类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_228">D.4.3 std::packaged_task类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_229">D.4.4 std::promise类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_230">D.4.5 std::async函数模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#nav_point_231">D.5 &lt;mutex&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#nav_point_232">D.5.1 std::mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_233">D.5.2 std::recursive_mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_234">D.5.3 std::timed_mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_235">D.5.4 std::recursive_timed_mutex类</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_236">D.5.5 std::lock_guard类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#nav_point_237">D.5.6 std::unique_lock类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_1">D.5.7 std::lock函数模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_2">D.5.8 std::try_lock函数模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_3">D.5.9 std::once_flag类</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_4">D.5.10 std::call_once函数模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#sigil_toc_id_5">D.6 &lt;ratio&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#sigil_toc_id_6">D.6.1 std::ratio类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_7">D.6.2 std::ratio_add模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_8">D.6.3 std::ratio_subtract模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_9">D.6.4 std::ratio_multiply模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_10">D.6.5 std::ratio_divide模板别名</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_11">D.6.6 std::ratio_equal类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_12">D.6.7 std::ratio_not_equal类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_13">D.6.8 std::ratio_less类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_14">D.6.9 std::ratio_greater类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_15">D.6.10 std::ratio_less_equal类模板</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_16">D.6.11 std::ratio_greater_equal类模板</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00025.html#sigil_toc_id_17">D.7 &lt;thread&gt;头文件</a>
+          <ul>
+            <li>
+              <a href="text00025.html#sigil_toc_id_18">D.7.1 std::thread类</a>
+            </li>
+            <li>
+              <a href="text00025.html#sigil_toc_id_19">D.7.2 this_thread命名空间</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00026.html#nav_point_238">欢迎来到异步社区！</a>
+      <ul>
+        <li>
+          <a href="text00026.html#nav_point_239">异步社区的来历</a>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_240">社区里都有什么？</a>
+          <ul>
+            <li>
+              <a href="text00026.html#nav_point_241">购买图书</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_242">下载资源</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_243">与作译者互动</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_244">灵活优惠的购书</a>
+          <ul>
+            <li>
+              <a href="text00026.html#nav_point_245">纸电图书组合购买</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_246">社区里还可以做什么？</a>
+          <ul>
+            <li>
+              <a href="text00026.html#nav_point_247">提交勘误</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_248">写作</a>
+            </li>
+            <li>
+              <a href="text00026.html#nav_point_249">会议活动早知道</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="text00026.html#nav_point_250">加入异步</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="text00027.html#sigil_toc_id_20">看完了</a>
+    </li>
+  </ul>
+</div>
+
+
+  </div>
+  
+
+  <div class="calibreEbNav">
+    
+      <a href="text00016.html" class="calibreAPrev">previous page
+</a>
+    
+
+    <a href="../../1w54d-4vylw.html" class="calibreAHome">start
+</a>
+
+    
+      <a href="text00018.html" class="calibreANext">next page
+</a>
+    
+  </div>
+
+</div>
+
+</body>
+</html>
