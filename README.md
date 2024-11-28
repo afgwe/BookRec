@@ -85,4 +85,5 @@
 
 4，启动ApplicationContext文件中的main方法
 
+计划2025年进行重构，前端Vue3重写，后端jdk17版本加上微服务，数据库改用MySQL8.
 
