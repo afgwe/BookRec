@@ -72,7 +72,7 @@
 
 4，输入npm run serve 启动前端
 
-5，浏览器输入http://localhost:8080即可进入前台页面
+5，浏览器输入http://localhost:8080 即可进入前台页面
 
 
 后端
